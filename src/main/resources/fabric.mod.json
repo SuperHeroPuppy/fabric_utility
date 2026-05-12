@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "fabric_utility",
+  "version": "${version}",
+
+  "name": "Fabric Utility",
+  "description": "A basic Fabric mod for Minecraft 1.20.1",
+  "authors": [
+    "Your Name"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+
+  "license": "CC0-1.0",
+  "icon": "assets/fabric_utility/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.supersnetwork.fabric_utility.FabricUtility"
+    ]
+  },
+
+  "depends": {
+    "fabricloader": ">=0.15.11",
+    "minecraft": "~1.20.1",
+    "java": ">=17"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
