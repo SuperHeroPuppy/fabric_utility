@@ -13,10 +13,11 @@ public class FabricUtility implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        // This code runs as soon as Minecraft is in a mod-load-ready state.
-        // However, some things (like resources) may still be uninitialized.
-        // Proceed with mild caution.
+        ChunkTagCommand.register();
+        InvulnerableChunkProtection.register();
+        InvulnerabilityEvents.register();
+        PettingHandler.register();
 
-        LOGGER.info("Hello Fabric world!");
+        LOGGER.info("Fabric Utility initialized");
     }
 }

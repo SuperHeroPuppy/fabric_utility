@@ -27,7 +27,9 @@ logs/
 *.log
 
 # Run configurations
-.run/
+run/
+
+.port-forge
 
 # Fabric
 # Skip the jar and remapped jar

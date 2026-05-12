@@ -4,9 +4,9 @@
   "version": "${version}",
 
   "name": "Fabric Utility",
-  "description": "A basic Fabric mod for Minecraft 1.20.1",
+  "description": "A basic Fabric utility mod for Minecraft 1.20.1",
   "authors": [
-    "Your Name"
+    "SuperHeroPuppy"
   ],
   "contact": {
     "homepage": "https://fabricmc.net/",
@@ -22,6 +22,9 @@
       "net.supersnetwork.fabric_utility.FabricUtility"
     ]
   },
+  "mixins": [
+    "fabric_utility.mixins.json"
+  ],
 
   "depends": {
     "fabricloader": ">=0.15.11",
