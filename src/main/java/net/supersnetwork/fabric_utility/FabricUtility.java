@@ -15,6 +15,7 @@ public class FabricUtility implements ModInitializer {
     public void onInitialize() {
         FabricUtilityConfig.load();
         FabricUtilityGameRules.register();
+        FabricUtilityCommand.register();
         ChunkTagCommand.register();
         InvulnerableChunkProtection.register();
         InvulnerabilityEvents.register();

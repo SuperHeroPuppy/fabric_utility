@@ -129,6 +129,10 @@ public final class NickCommandManager {
 
     private static void registerMessages() {
         ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message, sender, params) -> {
+            if (!FabricUtilityConfig.nicknameSystemEnabled()) {
+                return true;
+            }
+
             Optional<String> nickname = getNickname(sender);
 
             if (nickname.isEmpty() || SENDING_REPLACEMENT_MESSAGE.get()) {
@@ -146,6 +150,10 @@ public final class NickCommandManager {
         });
 
         ServerMessageEvents.ALLOW_GAME_MESSAGE.register((server, message, overlay) -> {
+            if (!FabricUtilityConfig.nicknameSystemEnabled()) {
+                return true;
+            }
+
             if (overlay || SENDING_REPLACEMENT_MESSAGE.get()) {
                 return true;
             }

@@ -45,6 +45,18 @@ public class TaggedChunksSavedData extends PersistentState {
         return true;
     }
 
+    public boolean setTag(Identifier dimension, int chunkX, int chunkZ, Optional<Integer> subChunkY, String tag, List<String> values) {
+        Map<String, List<String>> tags = taggedAreas.get(makeKey(dimension, chunkX, chunkZ, subChunkY));
+
+        if (tags == null || !tags.containsKey(tag)) {
+            return false;
+        }
+
+        tags.put(tag, List.copyOf(values));
+        markDirty();
+        return true;
+    }
+
     public boolean removeTag(Identifier dimension, int chunkX, int chunkZ, Optional<Integer> subChunkY, String tag) {
         String key = makeKey(dimension, chunkX, chunkZ, subChunkY);
         Map<String, List<String>> tags = taggedAreas.get(key);

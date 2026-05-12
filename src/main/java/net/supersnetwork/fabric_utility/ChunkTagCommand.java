@@ -1,7 +1,10 @@
 package net.supersnetwork.fabric_utility;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -14,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public final class ChunkTagCommand {
     private ChunkTagCommand() {
@@ -30,7 +34,14 @@ public final class ChunkTagCommand {
                                                 .executes(context -> add(context.getSource(), StringArgumentType.getString(context, "tag"), StringArgumentType.getString(context, "value"), Optional.empty())))))
                         .then(CommandManager.literal("remove")
                                 .then(CommandManager.argument("tag", StringArgumentType.string())
+                                        .suggests((context, builder) -> suggestCurrentTags(context, builder, Optional.empty()))
                                         .executes(context -> remove(context.getSource(), StringArgumentType.getString(context, "tag"), Optional.empty()))))
+                        .then(CommandManager.literal("set")
+                                .then(CommandManager.argument("tag", StringArgumentType.string())
+                                        .suggests((context, builder) -> suggestCurrentTags(context, builder, Optional.empty()))
+                                        .executes(context -> set(context.getSource(), StringArgumentType.getString(context, "tag"), "", Optional.empty()))
+                                        .then(CommandManager.argument("value", StringArgumentType.greedyString())
+                                                .executes(context -> set(context.getSource(), StringArgumentType.getString(context, "tag"), StringArgumentType.getString(context, "value"), Optional.empty())))))
                         .then(CommandManager.literal("get")
                                 .executes(context -> get(context.getSource(), Optional.empty())))
                         .then(CommandManager.literal("check")
@@ -43,7 +54,14 @@ public final class ChunkTagCommand {
                                                         .executes(context -> add(context.getSource(), StringArgumentType.getString(context, "tag"), StringArgumentType.getString(context, "value"), currentSubChunk(context.getSource()))))))
                                 .then(CommandManager.literal("remove")
                                         .then(CommandManager.argument("tag", StringArgumentType.string())
+                                                .suggests((context, builder) -> suggestCurrentTags(context, builder, currentSubChunk(context.getSource())))
                                                 .executes(context -> remove(context.getSource(), StringArgumentType.getString(context, "tag"), currentSubChunk(context.getSource())))))
+                                .then(CommandManager.literal("set")
+                                        .then(CommandManager.argument("tag", StringArgumentType.string())
+                                                .suggests((context, builder) -> suggestCurrentTags(context, builder, currentSubChunk(context.getSource())))
+                                                .executes(context -> set(context.getSource(), StringArgumentType.getString(context, "tag"), "", currentSubChunk(context.getSource())))
+                                                .then(CommandManager.argument("value", StringArgumentType.greedyString())
+                                                        .executes(context -> set(context.getSource(), StringArgumentType.getString(context, "tag"), StringArgumentType.getString(context, "value"), currentSubChunk(context.getSource()))))))
                                 .then(CommandManager.literal("get")
                                         .executes(context -> get(context.getSource(), currentSubChunk(context.getSource()))))
                                 .then(CommandManager.literal("check")
@@ -63,6 +81,22 @@ public final class ChunkTagCommand {
         }
 
         source.sendFeedback(() -> Text.literal(areaName(subChunkY) + " tagged with: " + describe(tag, values)), true);
+        return 1;
+    }
+
+    private static int set(ServerCommandSource source, String tag, String rawValue, Optional<Integer> subChunkY) throws CommandSyntaxException {
+        ServerPlayerEntity player = source.getPlayerOrThrow();
+        ServerWorld world = player.getServerWorld();
+        ChunkPosition position = position(player);
+        List<String> values = parseValues(rawValue);
+        boolean modified = TaggedChunksSavedData.get(world).setTag(position.dimension, position.chunkX, position.chunkZ, subChunkY, tag, values);
+
+        if (!modified) {
+            source.sendError(Text.literal(areaName(subChunkY) + " does not have tag: " + tag));
+            return 0;
+        }
+
+        source.sendFeedback(() -> Text.literal("Updated " + areaName(subChunkY).toLowerCase() + " tag: " + describe(tag, values)), true);
         return 1;
     }
 
@@ -101,6 +135,19 @@ public final class ChunkTagCommand {
 
     private static Optional<Integer> currentSubChunk(ServerCommandSource source) throws CommandSyntaxException {
         return Optional.of(TaggedChunksSavedData.subChunkY(source.getPlayerOrThrow().getBlockPos()));
+    }
+
+    private static CompletableFuture<Suggestions> suggestCurrentTags(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder, Optional<Integer> subChunkY) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        ChunkPosition position = position(player);
+
+        TaggedChunksSavedData.get(player.getServerWorld()).getTags(position.dimension, position.chunkX, position.chunkZ, subChunkY)
+                .keySet()
+                .stream()
+                .filter(tag -> tag.toLowerCase().startsWith(builder.getRemaining().toLowerCase()))
+                .forEach(builder::suggest);
+
+        return builder.buildFuture();
     }
 
     private static ChunkPosition position(ServerPlayerEntity player) {

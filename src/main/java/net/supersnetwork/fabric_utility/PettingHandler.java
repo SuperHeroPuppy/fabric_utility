@@ -26,9 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class PettingHandler {
-    private static final String PURR_ON_PET_TAG = "petting_purr";
-    private static final String[] ENTITY_SOUND_SUFFIXES = {"ambient", "step", "hurt", "death"};
-    private static final int MAX_PLAYER_PET_PARTICLES = 5;
     private static final Map<UUID, PetInteractionStamp> RECENT_PETS = new ConcurrentHashMap<>();
 
     private PettingHandler() {
@@ -86,8 +83,9 @@ public final class PettingHandler {
     }
 
     private static void playPetSound(ServerWorld world, LivingEntity living) {
-        if (living.getCommandTags().contains(PURR_ON_PET_TAG)) {
-            world.playSound(null, living.getX(), living.getY(), living.getZ(), SoundEvents.ENTITY_CAT_PURR, living.getSoundCategory(), 0.7F, living.getSoundPitch());
+        OptionalConfiguredSound configuredSound = configuredTagSound(living);
+        if (configuredSound.soundEvent != null) {
+            world.playSound(null, living.getX(), living.getY(), living.getZ(), configuredSound.soundEvent, living.getSoundCategory(), configuredSound.volume, configuredSound.pitch);
             return;
         }
 
@@ -102,7 +100,9 @@ public final class PettingHandler {
             return;
         }
 
-        world.playSound(null, living.getX(), living.getY(), living.getZ(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.NEUTRAL, 0.1F, 1.8F);
+        FabricUtilityConfig.PetSound fallback = FabricUtilityConfig.defaultPlayerPetSound();
+        SoundEvent fallbackSound = FabricUtilityConfig.soundEvent(fallback.soundId()).orElse(SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC);
+        world.playSound(null, living.getX(), living.getY(), living.getZ(), fallbackSound, SoundCategory.NEUTRAL, fallback.volume(), fallback.pitch());
     }
 
     private static SoundEvent findPetSound(LivingEntity living) {
@@ -111,7 +111,7 @@ public final class PettingHandler {
         }
 
         Identifier entityId = EntityType.getId(living.getType());
-        for (String suffix : ENTITY_SOUND_SUFFIXES) {
+        for (String suffix : FabricUtilityConfig.pettingSoundSuffixes()) {
             Identifier soundId = new Identifier(entityId.getNamespace(), "entity." + entityId.getPath() + "." + suffix);
 
             if (Registries.SOUND_EVENT.containsId(soundId)) {
@@ -126,7 +126,7 @@ public final class PettingHandler {
         double width = target.getWidth();
         double height = target.getHeight();
         int particleCount = Math.max(2, (int) (width * width * height * 20));
-        particleCount = Math.min(particleCount, target instanceof PlayerEntity ? MAX_PLAYER_PET_PARTICLES : 15);
+        particleCount = Math.min(particleCount, target instanceof PlayerEntity ? FabricUtilityConfig.maxPlayerPetParticles() : 15);
 
         Box box = target.getBoundingBox();
         ServerPlayerEntity excludedViewer = target instanceof ServerPlayerEntity serverPlayer ? serverPlayer : null;
@@ -145,5 +145,16 @@ public final class PettingHandler {
     }
 
     private record PetInteractionStamp(long gameTime, int targetId) {
+    }
+
+    private static OptionalConfiguredSound configuredTagSound(LivingEntity living) {
+        return FabricUtilityConfig.petSoundForTags(living.getCommandTags())
+                .flatMap(sound -> FabricUtilityConfig.soundEvent(sound.soundId())
+                        .map(soundEvent -> new OptionalConfiguredSound(soundEvent, sound.volume(), sound.pitch())))
+                .orElse(OptionalConfiguredSound.EMPTY);
+    }
+
+    private record OptionalConfiguredSound(SoundEvent soundEvent, float volume, float pitch) {
+        private static final OptionalConfiguredSound EMPTY = new OptionalConfiguredSound(null, 0.0F, 0.0F);
     }
 }
