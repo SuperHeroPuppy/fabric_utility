@@ -18,6 +18,7 @@ public class FabricUtilityConfigScreen extends Screen {
     private static final int SECTION_GAP = 18;
     private static final int FIELD_HEIGHT = 20;
     private static final int FOOTER_HEIGHT = 34;
+    private static final int PANEL_WIDTH = 460;
 
     private final Screen parent;
     private final List<Row> rows = new ArrayList<>();
@@ -47,23 +48,24 @@ public class FabricUtilityConfigScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         renderBackground(context);
-        context.fill(0, 0, width, 28, 0xCC101015);
-        context.fill(0, height - FOOTER_HEIGHT, width, height, 0xCC101015);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 10, 0xFFFFFF);
-
         int top = 32;
         int bottom = height - FOOTER_HEIGHT - 6;
+
+        context.fill(0, 0, width, 28, 0xEE101015);
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 10, 0xFFFFFF);
         context.enableScissor(0, top, width, bottom);
 
         for (Row row : rows) {
             int y = row.y - scrollY;
             if (y > -32 && y < height) {
-                row.render(context, width / 2 - 180, y, width);
+                row.render(context, contentLeft(), y, width);
             }
         }
 
         context.disableScissor();
         super.render(context, mouseX, mouseY, delta);
+        context.fill(0, height - FOOTER_HEIGHT, width, height, 0xF0101015);
+        context.fill(0, height - FOOTER_HEIGHT, width, height - FOOTER_HEIGHT + 1, 0xAAFFFFFF);
         drawScrollbar(context, top, bottom);
     }
 
@@ -95,7 +97,7 @@ public class FabricUtilityConfigScreen extends Screen {
         maxPlayerParticles = textField(FabricUtilityConfig.getValue("maxPlayerPetParticles"));
         addRow(new FieldRow("Max player particles", "Caps heart particles when petting players.", maxPlayerParticles));
         defaultSound = textField(FabricUtilityConfig.getValue("defaultPlayerPetSound"));
-        addRow(new FieldRow("Default player sound", "Sound id used for players and fallback pet sounds.", defaultSound));
+        addRow(new FieldRow("Default player sound", "Sound id used for players and fallback pet sounds.", defaultSound, true));
         defaultVolume = textField(FabricUtilityConfig.getValue("defaultPlayerPetVolume"));
         defaultPitch = textField(FabricUtilityConfig.getValue("defaultPlayerPetPitch"));
         addRow(new TwoFieldRow("Default volume", defaultVolume, "Default pitch", defaultPitch));
@@ -154,9 +156,9 @@ public class FabricUtilityConfigScreen extends Screen {
         ButtonWidget save = ButtonWidget.builder(Text.literal("Save"), button -> {
             writeConfig();
             close();
-        }).dimensions(width / 2 - 154, height - 27, 150, 20).build();
+        }).dimensions(width / 2 - 154, height - 25, 150, 20).build();
         ButtonWidget cancel = ButtonWidget.builder(Text.literal("Cancel"), button -> close())
-                .dimensions(width / 2 + 4, height - 27, 150, 20)
+                .dimensions(width / 2 + 4, height - 25, 150, 20)
                 .build();
         addDrawableChild(save);
         addDrawableChild(cancel);
@@ -180,16 +182,28 @@ public class FabricUtilityConfigScreen extends Screen {
 
     private void positionRows() {
         int y = 38;
-        int left = width / 2 - 180;
-        int right = width / 2 + 180;
+        int left = contentLeft();
+        int right = contentRight();
+        int top = 32;
+        int bottom = height - FOOTER_HEIGHT - 6;
 
         for (Row row : rows) {
             row.y = y;
-            row.position(left, y - scrollY, right);
+            int visibleY = y - scrollY;
+            row.position(left, visibleY, right);
+            row.setVisible(visibleY + row.height() > top && visibleY < bottom);
             y += row.height();
         }
 
         contentHeight = y;
+    }
+
+    private int contentLeft() {
+        return Math.max(16, width / 2 - PANEL_WIDTH / 2);
+    }
+
+    private int contentRight() {
+        return Math.min(width - 16, width / 2 + PANEL_WIDTH / 2);
     }
 
     private void drawScrollbar(DrawContext context, int top, int bottom) {
@@ -273,6 +287,13 @@ public class FabricUtilityConfigScreen extends Screen {
         void sync() {
         }
 
+        void setVisible(boolean visible) {
+            for (ClickableWidget child : children()) {
+                child.visible = visible;
+                child.active = visible;
+            }
+        }
+
         List<? extends ClickableWidget> children() {
             return List.of();
         }
@@ -319,16 +340,22 @@ public class FabricUtilityConfigScreen extends Screen {
         private final String label;
         private final String help;
         private final TextFieldWidget field;
+        private final boolean wide;
 
         private FieldRow(String label, String help, TextFieldWidget field) {
+            this(label, help, field, false);
+        }
+
+        private FieldRow(String label, String help, TextFieldWidget field, boolean wide) {
             this.label = label;
             this.help = help;
             this.field = field;
+            this.wide = wide;
         }
 
         @Override
         int height() {
-            return 44;
+            return wide ? 62 : 50;
         }
 
         @Override
@@ -339,8 +366,15 @@ public class FabricUtilityConfigScreen extends Screen {
 
         @Override
         void position(int left, int y, int right) {
-            field.setX(right - 180);
-            field.setY(y + 9);
+            if (wide) {
+                field.setWidth(right - left);
+                field.setX(left);
+                field.setY(y + 35);
+            } else {
+                field.setWidth(190);
+                field.setX(right - 190);
+                field.setY(y + 16);
+            }
         }
 
         @Override
@@ -364,23 +398,23 @@ public class FabricUtilityConfigScreen extends Screen {
 
         @Override
         int height() {
-            return 34;
+            return 38;
         }
 
         @Override
         void render(DrawContext context, int left, int y, int screenWidth) {
-            context.drawTextWithShadow(textRenderer, leftLabel, left, y + 7, 0xFFFFFFFF);
-            context.drawTextWithShadow(textRenderer, rightLabel, left + 182, y + 7, 0xFFFFFFFF);
+            context.drawTextWithShadow(textRenderer, leftLabel, left, y + 9, 0xFFFFFFFF);
+            context.drawTextWithShadow(textRenderer, rightLabel, left + 220, y + 9, 0xFFFFFFFF);
         }
 
         @Override
         void position(int left, int y, int right) {
             leftField.setWidth(72);
             rightField.setWidth(72);
-            leftField.setX(left + 102);
-            leftField.setY(y + 2);
+            leftField.setX(left + 130);
+            leftField.setY(y + 4);
             rightField.setX(right - 72);
-            rightField.setY(y + 2);
+            rightField.setY(y + 4);
         }
 
         @Override
@@ -400,7 +434,7 @@ public class FabricUtilityConfigScreen extends Screen {
         @Override
         void position(int left, int y, int right) {
             button.setX(right - 160);
-            button.setY(y + 9);
+            button.setY(y + 16);
         }
 
         @Override
@@ -431,7 +465,7 @@ public class FabricUtilityConfigScreen extends Screen {
 
         @Override
         void position(int left, int y, int right) {
-            field.setWidth(282);
+            field.setWidth(right - left - 78);
             field.setX(left);
             field.setY(y + 1);
             remove.setX(right - 70);
@@ -468,33 +502,33 @@ public class FabricUtilityConfigScreen extends Screen {
 
         @Override
         int height() {
-            return 48;
+            return 72;
         }
 
         @Override
         void render(DrawContext context, int left, int y, int screenWidth) {
             context.drawTextWithShadow(textRenderer, "Tag", left, y, 0xFF9CA3AF);
-            context.drawTextWithShadow(textRenderer, "Sound", left + 104, y, 0xFF9CA3AF);
-            context.drawTextWithShadow(textRenderer, "Vol", left + 232, y, 0xFF9CA3AF);
-            context.drawTextWithShadow(textRenderer, "Pitch", left + 282, y, 0xFF9CA3AF);
+            context.drawTextWithShadow(textRenderer, "Sound", left + 136, y, 0xFF9CA3AF);
+            context.drawTextWithShadow(textRenderer, "Vol", left + 312, y, 0xFF9CA3AF);
+            context.drawTextWithShadow(textRenderer, "Pitch", left + 366, y, 0xFF9CA3AF);
         }
 
         @Override
         void position(int left, int y, int right) {
-            tag.setWidth(96);
-            sound.setWidth(122);
-            volume.setWidth(44);
-            pitch.setWidth(44);
+            tag.setWidth(126);
+            sound.setWidth(168);
+            volume.setWidth(46);
+            pitch.setWidth(46);
             tag.setX(left);
-            sound.setX(left + 104);
-            volume.setX(left + 232);
-            pitch.setX(left + 282);
-            remove.setX(right - 70);
+            sound.setX(left + 136);
+            volume.setX(left + 312);
+            pitch.setX(left + 366);
+            remove.setX(left);
             tag.setY(y + 16);
             sound.setY(y + 16);
             volume.setY(y + 16);
             pitch.setY(y + 16);
-            remove.setY(y + 16);
+            remove.setY(y + 44);
         }
 
         @Override
