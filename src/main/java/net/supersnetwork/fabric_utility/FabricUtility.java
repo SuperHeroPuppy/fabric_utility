@@ -13,10 +13,14 @@ public class FabricUtility implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        FabricUtilityConfig.load();
+        FabricUtilityGameRules.register();
         ChunkTagCommand.register();
         InvulnerableChunkProtection.register();
         InvulnerabilityEvents.register();
         PettingHandler.register();
+        NickCommandManager.register();
+        BanHammerHandler.register();
 
         LOGGER.info("Fabric Utility initialized");
     }

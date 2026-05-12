@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class PettingHandler {
-    private static final Identifier SCRIMBLO_ID = new Identifier("scrimblos", "scrimblo");
     private static final String PURR_ON_PET_TAG = "petting_purr";
     private static final String[] ENTITY_SOUND_SUFFIXES = {"ambient", "step", "hurt", "death"};
     private static final int MAX_PLAYER_PET_PARTICLES = 5;
@@ -44,6 +43,10 @@ public final class PettingHandler {
             return ActionResult.PASS;
         }
 
+        if (!world.getGameRules().getBoolean(FabricUtilityGameRules.ALLOW_PETTING)) {
+            return ActionResult.PASS;
+        }
+
         if (!player.isSneaking() || !player.getStackInHand(hand).isEmpty()) {
             return ActionResult.PASS;
         }
@@ -52,11 +55,13 @@ public final class PettingHandler {
             return ActionResult.PASS;
         }
 
+        Identifier entityId = EntityType.getId(target.getType());
+
         if (target instanceof ArmorStandEntity || target instanceof ItemFrameEntity || target.getType() == EntityType.PAINTING) {
             return ActionResult.PASS;
         }
 
-        if (SCRIMBLO_ID.equals(EntityType.getId(target.getType()))) {
+        if (FabricUtilityConfig.isPettingBlocked(entityId)) {
             return ActionResult.PASS;
         }
 
