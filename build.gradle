@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom' version '1.3'
+    id 'fabric-loom' version '1.3.9'
     id 'maven-publish'
 }
 
@@ -70,4 +70,6 @@ publishing {
         // Add repositories to publish to here.
         // Notice: This block does NOT have the same function as the block in the top level.
         // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
+        // retrieving dependencies.
+    }
+}
