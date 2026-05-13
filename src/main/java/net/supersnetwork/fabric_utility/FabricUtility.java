@@ -20,6 +20,7 @@ public class FabricUtility implements ModInitializer {
         InvulnerableChunkProtection.register();
         InvulnerabilityEvents.register();
         PettingHandler.register();
+        ProxyChatManager.register();
         NickCommandManager.register();
         BanHammerHandler.register();
 

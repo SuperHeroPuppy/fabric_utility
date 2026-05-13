@@ -32,7 +32,10 @@ public class FabricUtilityConfigScreen extends Screen {
     private TextFieldWidget defaultVolume;
     private TextFieldWidget defaultPitch;
     private ButtonWidget nicknameToggle;
+    private ButtonWidget proxyChatToggle;
     private boolean nicknameEnabled;
+    private boolean proxyChatEnabled;
+    private TextFieldWidget proxyRangeField;
 
     protected FabricUtilityConfigScreen(Screen parent) {
         super(Text.literal("Fabric Utility Config"));
@@ -92,6 +95,15 @@ public class FabricUtilityConfigScreen extends Screen {
             button.setMessage(toggleText("Nicknames", nicknameEnabled));
         }).dimensions(0, 0, 160, FIELD_HEIGHT).build();
         addRow(new ControlRow("Nickname system", "Applies nicknames to chat and game messages.", nicknameToggle));
+
+        proxyChatToggle = ButtonWidget.builder(toggleText("Proxy chat", proxyChatEnabled), button -> {
+            proxyChatEnabled = !proxyChatEnabled;
+            button.setMessage(toggleText("Proxy chat", proxyChatEnabled));
+        }).dimensions(0, 0, 160, FIELD_HEIGHT).build();
+        addRow(new ControlRow("Proxy chat", "Enables chunk-limited local chat.", proxyChatToggle));
+
+        proxyRangeField = textField(FabricUtilityConfig.getValue("proxyChatRangeChunks"));
+        addRow(new FieldRow("Proxy range chunks", "Local chat radius in chunks.", proxyRangeField));
 
         addSection("Petting");
         maxPlayerParticles = textField(FabricUtilityConfig.getValue("maxPlayerPetParticles"));
@@ -222,6 +234,7 @@ public class FabricUtilityConfigScreen extends Screen {
 
     private void readConfig() {
         nicknameEnabled = Boolean.parseBoolean(FabricUtilityConfig.getValue("nicknameSystemEnabled"));
+        proxyChatEnabled = Boolean.parseBoolean(FabricUtilityConfig.getValue("proxyChatEnabled"));
         splitList(FabricUtilityConfig.getValue("blockedPettableEntities")).forEach(value -> blockedEntities.add(new ListValue(value)));
         splitList(FabricUtilityConfig.getValue("pettingSoundSuffixes")).forEach(value -> soundSuffixes.add(new ListValue(value)));
         splitList(FabricUtilityConfig.getValue("customPetSounds"), ";").forEach(value -> customSounds.add(CustomSoundValue.parse(value)));
@@ -230,6 +243,8 @@ public class FabricUtilityConfigScreen extends Screen {
     private void writeConfig() {
         rows.forEach(Row::sync);
         FabricUtilityConfig.setValue("nicknameSystemEnabled", Boolean.toString(nicknameEnabled));
+        FabricUtilityConfig.setValue("proxyChatEnabled", Boolean.toString(proxyChatEnabled));
+        FabricUtilityConfig.setValue("proxyChatRangeChunks", proxyRangeField.getText());
         FabricUtilityConfig.setValue("maxPlayerPetParticles", maxPlayerParticles.getText());
         FabricUtilityConfig.setValue("defaultPlayerPetSound", defaultSound.getText());
         FabricUtilityConfig.setValue("defaultPlayerPetVolume", defaultVolume.getText());

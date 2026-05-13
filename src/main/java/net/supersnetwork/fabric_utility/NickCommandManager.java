@@ -129,6 +129,19 @@ public final class NickCommandManager {
 
     private static void registerMessages() {
         ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message, sender, params) -> {
+            // Handle proxy chat system
+            if (FabricUtilityConfig.proxyChatEnabled()) {
+                String text = message.getContent().getString().trim();
+                if (!text.isEmpty()) {
+                    // Route through proxy chat based on player's pinned mode
+                    ChatStateSavedData chatData = ChatStateSavedData.get(sender.getServer());
+                    ChatStateSavedData.ChatPinMode pinMode = chatData.getPinMode(sender);
+                    
+                    ProxyChatManager.sendChatForMode(sender, text, true, pinMode, chatData.getPinnedArea(sender));
+                    return false;
+                }
+            }
+
             if (!FabricUtilityConfig.nicknameSystemEnabled()) {
                 return true;
             }

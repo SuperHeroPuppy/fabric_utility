@@ -17,6 +17,9 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - `/nick` lets players save, switch, clear, and list nicknames.
 - `/nick admin` lets operators set, clear, discover, and list player nicknames.
 - Nicknames are applied to chat and common game messages.
+- `/proxy` provides proximity chat with local, world, and area-based messaging.
+- Proxy chat supports pinned modes, do-not-disturb, and configurable ranges.
+- Named chat areas can be created and managed using chunk tagging.
 - Config file `config/fabric_utility.properties` can block entity ids from being pettable.
 - Mod Menu can open a client-side config editor when Mod Menu is installed.
 - `/fabricutility config` can reload, sync, inspect, and edit server config values.
@@ -49,6 +52,14 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - `/nick admin clear <player>`
 - `/nick admin discover <player>`
 - `/nick admin list`
+- `/m local <message>`
+- `/m world <message>`
+- `/proxy dnd on|off`
+- `/proxy range <chunks>` (admin only)
+- `/proxy area create <name> <radius>`
+- `/proxy area delete <name>`
+- `/proxy area list`
+- `/pin none|world|local|area <name>`
 
 ## Ban Hammer NBT
 
@@ -63,7 +74,22 @@ Any item with `BanHammer` in its NBT becomes a ban hammer. If the tag is a strin
 - `defaultPlayerPetVolume`: fallback sound volume.
 - `defaultPlayerPetPitch`: fallback sound pitch.
 - `nicknameSystemEnabled`: enables nickname chat/game-message replacement.
+- `proxyChatEnabled`: enables the proxy chat system.
+- `proxyChatRangeChunks`: default proximity chat range in chunks.
 - `customPetSounds`: semicolon-separated command-tag sound rules, formatted as `tag=namespace:sound:volume:pitch`.
+
+## Proxy Chat
+
+Proxy chat provides advanced messaging options beyond vanilla Minecraft chat:
+
+- **Local Chat**: Messages sent with `/m local <message>` are only visible to players within the configured range (default 8 chunks).
+- **World Chat**: Messages sent with `/m world <message>` are visible to all players on the server.
+- **Chat Pinning**: Players can pin their chat to specific modes using `/pin none|world|local|area <name>` to always send messages in that mode.
+- **Do Not Disturb**: Players can enable DND with `/proxy dnd on` to block incoming private messages and replies.
+- **Range Configuration**: Only administrators can set the local chat range with `/proxy range <chunks>` (1-16 chunks)
+- **Chat Areas**: Named areas can be created with `/proxy area create <name> <radius>` and used for area-specific chat when pinned.
+
+Chat areas are stored as chunk tags with the prefix `proxy_area:` and can be managed alongside other chunk tags. The system integrates with the nickname system, so nicknames are displayed in proxy chat messages when enabled.
 
 ## Height Limit
 

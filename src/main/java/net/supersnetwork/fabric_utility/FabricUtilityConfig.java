@@ -28,6 +28,8 @@ public final class FabricUtilityConfig {
             "defaultPlayerPetVolume",
             "defaultPlayerPetPitch",
             "nicknameSystemEnabled",
+            "proxyChatEnabled",
+            "proxyChatRangeChunks",
             "customPetSounds"
     );
 
@@ -35,10 +37,12 @@ public final class FabricUtilityConfig {
     private static final Properties PROPERTIES = new Properties();
     private static final Set<Identifier> BLOCKED_PETTABLE_ENTITIES = new HashSet<>();
     private static final Map<String, PetSound> CUSTOM_PET_SOUNDS = new LinkedHashMap<>();
-    private static List<String> pettingSoundSuffixes = List.of("ambient", "step", "hurt", "death");
+    private static List<String> pettingSoundSuffixes = List.of("ambient","step","hurt","death");
     private static int maxPlayerPetParticles = 5;
-    private static PetSound defaultPlayerPetSound = new PetSound(new Identifier("minecraft", "item.brush.brushing.generic"), 0.1F, 1.8F);
+    private static PetSound defaultPlayerPetSound = new PetSound(new Identifier("minecraft","item.brush.brushing.generic"),0.1F,1.8F);
     private static boolean nicknameSystemEnabled = true;
+    private static boolean proxyChatEnabled = true;
+    private static int proxyChatRangeChunks = 3;
 
     private FabricUtilityConfig() {
     }
@@ -113,6 +117,14 @@ public final class FabricUtilityConfig {
         return nicknameSystemEnabled;
     }
 
+    public static boolean proxyChatEnabled() {
+        return proxyChatEnabled;
+    }
+
+    public static int proxyChatRangeChunks() {
+        return proxyChatRangeChunks;
+    }
+
     public static Optional<PetSound> petSoundForTags(Set<String> tags) {
         for (Map.Entry<String, PetSound> entry : CUSTOM_PET_SOUNDS.entrySet()) {
             if (tags.contains(entry.getKey())) {
@@ -135,6 +147,8 @@ public final class FabricUtilityConfig {
         properties.putIfAbsent("defaultPlayerPetVolume", "0.1");
         properties.putIfAbsent("defaultPlayerPetPitch", "1.8");
         properties.putIfAbsent("nicknameSystemEnabled", "true");
+        properties.putIfAbsent("proxyChatEnabled", "true");
+        properties.putIfAbsent("proxyChatRangeChunks", "3");
         properties.putIfAbsent("customPetSounds", "petting_purr=minecraft:entity.cat.purr:0.7:1.0");
     }
 
@@ -158,6 +172,8 @@ public final class FabricUtilityConfig {
                 parseFloat(getValue("defaultPlayerPetPitch"), 1.8F)
         );
         nicknameSystemEnabled = Boolean.parseBoolean(getValue("nicknameSystemEnabled"));
+        proxyChatEnabled = Boolean.parseBoolean(getValue("proxyChatEnabled"));
+        proxyChatRangeChunks = parseInt(getValue("proxyChatRangeChunks"), 3);
 
         CUSTOM_PET_SOUNDS.clear();
         Arrays.stream(getValue("customPetSounds").split(";"))

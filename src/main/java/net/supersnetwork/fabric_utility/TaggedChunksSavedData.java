@@ -11,13 +11,16 @@ import net.minecraft.world.PersistentState;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public class TaggedChunksSavedData extends PersistentState {
     private static final String STORAGE_KEY = "tagged_chunks";
     private static final int WHOLE_CHUNK_SECTION = Integer.MIN_VALUE;
+    private static final String AREA_TAG_PREFIX = "proxy_area:";
 
     private final Map<String, Map<String, List<String>>> taggedAreas = new HashMap<>();
 
@@ -108,6 +111,70 @@ public class TaggedChunksSavedData extends PersistentState {
     public Map<String, List<String>> getTags(Identifier dimension, int chunkX, int chunkZ, Optional<Integer> subChunkY) {
         Map<String, List<String>> tags = taggedAreas.get(makeKey(dimension, chunkX, chunkZ, subChunkY));
         return tags == null ? Map.of() : Map.copyOf(tags);
+    }
+
+    public Set<String> getProxyAreaNames() {
+        Set<String> result = new HashSet<>();
+        for (Map<String, List<String>> tags : taggedAreas.values()) {
+            for (String tag : tags.keySet()) {
+                if (tag.startsWith(AREA_TAG_PREFIX)) {
+                    result.add(tag.substring(AREA_TAG_PREFIX.length()));
+                }
+            }
+        }
+        return result;
+    }
+
+    public boolean hasProxyAreaAt(Identifier dimension, int chunkX, int chunkZ, String areaName) {
+        String tag = AREA_TAG_PREFIX + areaName;
+        return getTags(dimension, chunkX, chunkZ, Optional.empty()).containsKey(tag);
+    }
+
+    public boolean createProxyArea(Identifier dimension, int centerChunkX, int centerChunkZ, int radius, String areaName) {
+        if (areaName == null || areaName.isBlank()) {
+            return false;
+        }
+
+        String tag = AREA_TAG_PREFIX + areaName;
+        boolean modified = false;
+
+        for (int chunkX = centerChunkX - radius; chunkX <= centerChunkX + radius; chunkX++) {
+            for (int chunkZ = centerChunkZ - radius; chunkZ <= centerChunkZ + radius; chunkZ++) {
+                if (!hasProxyAreaAt(dimension, chunkX, chunkZ, areaName)) {
+                    addTag(dimension, chunkX, chunkZ, Optional.empty(), tag, List.of());
+                    modified = true;
+                }
+            }
+        }
+
+        return modified;
+    }
+
+    public boolean deleteProxyArea(String areaName) {
+        if (areaName == null || areaName.isBlank()) {
+            return false;
+        }
+
+        String tag = AREA_TAG_PREFIX + areaName;
+        boolean modified = false;
+
+        for (String key : new HashSet<>(taggedAreas.keySet())) {
+            Map<String, List<String>> tags = taggedAreas.get(key);
+            if (tags != null && tags.containsKey(tag)) {
+                tags.remove(tag);
+                modified = true;
+
+                if (tags.isEmpty()) {
+                    taggedAreas.remove(key);
+                }
+            }
+        }
+
+        if (modified) {
+            markDirty();
+        }
+
+        return modified;
     }
 
     private static String makeKey(Identifier dimension, int chunkX, int chunkZ, Optional<Integer> subChunkY) {
