@@ -14,9 +14,10 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - Shift-right-click with an empty hand pets living entities, plays a sound, and spawns heart particles.
 - Gamerule `fabricUtilityAllowPetting` enables or disables petting.
 - Gamerule `fabricUtilityWorldHeightLimit` sets an optional max build height guard. `0` uses vanilla behavior.
+- Gamerule `fabricUtilityAdminNicknameChangesAffectHistory` controls whether admin nickname changes are added to a player's nickname history.
 - `/nick` lets players save, switch, clear, and list nicknames.
-- `/nick admin` lets operators set, clear, discover, and list player nicknames.
-- Nicknames are applied to chat and common game messages.
+- `/nick admin` lets operators set, clear, discover, inspect history, and list player nicknames.
+- Nicknames are applied to chat, proxy chat, common game messages, join/leave messages, tab list names, and nameplates.
 - `/proxy` provides proximity chat with local, world, and area-based messaging.
 - Proxy chat supports pinned modes, do-not-disturb, and configurable ranges.
 - Named chat areas can be created and managed using chunk tagging.
@@ -24,7 +25,8 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - Mod Menu can open a client-side config editor when Mod Menu is installed.
 - `/fabricutility config` can reload, sync, inspect, and edit server config values.
 - Petting sounds, command-tag sound overrides, player fallback sound, volume, pitch, particle count, and nickname enablement are configurable.
-- Items with the NBT tag `BanHammer` ban punched players for seven days.
+- Items with the NBT tag `BanHammer` let operators ban punched players for seven days.
+- Non-operators carrying a `supplementaries:cage` containing a command block minecart have that contained entity sanitized into a pig.
 
 ## Commands
 
@@ -51,6 +53,7 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - `/nick admin set <player> <nickname>`
 - `/nick admin clear <player>`
 - `/nick admin discover <player>`
+- `/nick admin history <player>`
 - `/nick admin list`
 - `/m local <message>`
 - `/m world <message>`
@@ -63,7 +66,15 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 
 ## Ban Hammer NBT
 
-Any item with `BanHammer` in its NBT becomes a ban hammer. If the tag is a string, that string is used as the ban reason. Otherwise the default reason is `the ban hammer has spoken`.
+Any item with `BanHammer` in its NBT becomes a ban hammer for operators. If the tag is a string, that string is used as the ban reason. Otherwise the default reason is `the ban hammer has spoken`.
+
+Non-operators cannot activate ban hammer items.
+
+## NBT Safety
+
+For non-operators, `supplementaries:cage` items are scanned for embedded `minecraft:command_block_minecart` entity data under their block entity NBT. When found, the embedded entity id is changed to `minecraft:pig` and command-related fields are removed.
+
+This is a compatibility safety patch for Supplementaries cages that have been edited with external NBT tools.
 
 ## Config Keys
 
@@ -82,7 +93,7 @@ Any item with `BanHammer` in its NBT becomes a ban hammer. If the tag is a strin
 
 Proxy chat provides advanced messaging options beyond vanilla Minecraft chat:
 
-- **Local Chat**: Messages sent with `/m local <message>` are only visible to players within the configured range (default 8 chunks).
+- **Local Chat**: Messages sent with `/m local <message>` are only visible to players within the configured range (default 3 chunks).
 - **World Chat**: Messages sent with `/m world <message>` are visible to all players on the server.
 - **Chat Pinning**: Players can pin their chat to specific modes using `/pin none|world|local|area <name>` to always send messages in that mode.
 - **Do Not Disturb**: Players can enable DND with `/proxy dnd on` to block incoming private messages and replies.
@@ -94,3 +105,7 @@ Chat areas are stored as chunk tags with the prefix `proxy_area:` and can be man
 ## Height Limit
 
 `fabricUtilityWorldHeightLimit` is a safe max-build-height guard. Values above the vanilla dimension height cannot expand chunk storage at runtime; use dimension type/worldgen data for worlds that need a taller buildable height.
+
+## Nickname History
+
+`fabricUtilityAdminNicknameChangesAffectHistory` defaults to `true`. When set to `false`, `/nick admin set <player> <nickname>` changes the player's current nickname without adding that nickname to their saved history.
