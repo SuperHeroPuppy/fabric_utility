@@ -7,6 +7,7 @@ import net.minecraft.world.GameRules;
 public final class FabricUtilityGameRules {
     public static GameRules.Key<GameRules.BooleanRule> ALLOW_PETTING;
     public static GameRules.Key<GameRules.IntRule> WORLD_HEIGHT_LIMIT;
+    public static GameRules.Key<GameRules.BooleanRule> ADMIN_NICKNAME_CHANGES_AFFECT_HISTORY;
 
     private FabricUtilityGameRules() {
     }
@@ -14,5 +15,6 @@ public final class FabricUtilityGameRules {
     public static void register() {
         ALLOW_PETTING = GameRuleRegistry.register("fabricUtilityAllowPetting", GameRules.Category.MOBS, GameRuleFactory.createBooleanRule(true));
         WORLD_HEIGHT_LIMIT = GameRuleRegistry.register("fabricUtilityWorldHeightLimit", GameRules.Category.UPDATES, GameRuleFactory.createIntRule(0, 0));
+        ADMIN_NICKNAME_CHANGES_AFFECT_HISTORY = GameRuleRegistry.register("fabricUtilityAdminNicknameChangesAffectHistory", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
     }
 }

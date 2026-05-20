@@ -8,6 +8,7 @@ import net.minecraft.server.BannedPlayerEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 
 import java.time.Instant;
@@ -30,6 +31,11 @@ public final class BanHammerHandler {
             ItemStack stack = player.getStackInHand(hand);
             if (!isBanHammer(stack)) {
                 return ActionResult.PASS;
+            }
+
+            if (!serverPlayer.hasPermissionLevel(2)) {
+                serverPlayer.sendMessage(Text.literal("Only operators can use the ban hammer.").formatted(Formatting.RED), true);
+                return ActionResult.FAIL;
             }
 
             String reason = getReason(stack);

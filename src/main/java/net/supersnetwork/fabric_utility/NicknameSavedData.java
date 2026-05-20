@@ -47,7 +47,11 @@ public class NicknameSavedData extends PersistentState {
     }
 
     public Optional<String> getNickname(ServerPlayerEntity player) {
-        PlayerNicknames data = nicknames.get(player.getUuid());
+        return getNickname(player.getUuid());
+    }
+
+    public Optional<String> getNickname(UUID uuid) {
+        PlayerNicknames data = nicknames.get(uuid);
         return data == null || data.current.isBlank() ? Optional.empty() : Optional.of(data.current);
     }
 

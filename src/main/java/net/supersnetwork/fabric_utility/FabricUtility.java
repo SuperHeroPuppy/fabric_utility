@@ -23,6 +23,7 @@ public class FabricUtility implements ModInitializer {
         ProxyChatManager.register();
         NickCommandManager.register();
         BanHammerHandler.register();
+        CommandBlockMinecartNbtSanitizer.register();
 
         LOGGER.info("Fabric Utility initialized");
     }
