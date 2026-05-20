@@ -16,6 +16,7 @@ import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableTextContent;
+import net.minecraft.util.Formatting;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,9 +54,14 @@ public final class NickCommandManager {
                                         .executes(context -> {
                                             ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
                                             String nickname = StringArgumentType.getString(context, "nickname");
+                                            if (!validateNickname(context.getSource(), nickname)) {
+                                                return 0;
+                                            }
+
                                             NicknameSavedData.get(context.getSource().getServer()).addNickname(player, nickname);
                                             updateNicknameSurfaces(player);
                                             context.getSource().sendFeedback(() -> Text.literal("Nickname added and set: " + nickname), true);
+                                            notifyAdmins(context.getSource(), player, "added and switched to nickname '" + nickname + "'");
                                             return 1;
                                         })))
                         .then(CommandManager.literal("remove")
@@ -67,6 +73,7 @@ public final class NickCommandManager {
                                             NicknameSavedData.get(context.getSource().getServer()).removeFromHistory(player, nickname);
                                             updateNicknameSurfaces(player);
                                             context.getSource().sendFeedback(() -> Text.literal("Removed nickname from history: " + nickname), true);
+                                            notifyAdmins(context.getSource(), player, "removed nickname '" + nickname + "' from their history");
                                             return 1;
                                         })))
                         .then(CommandManager.literal("set")
@@ -77,6 +84,10 @@ public final class NickCommandManager {
                                             String nickname = StringArgumentType.getString(context, "nickname");
                                             NicknameSavedData data = NicknameSavedData.get(context.getSource().getServer());
 
+                                            if (!validateNickname(context.getSource(), nickname)) {
+                                                return 0;
+                                            }
+
                                             if (!data.getHistory(player).contains(nickname)) {
                                                 context.getSource().sendError(Text.literal("Nickname not in your history!"));
                                                 return 0;
@@ -85,6 +96,7 @@ public final class NickCommandManager {
                                             data.setNickname(player, nickname);
                                             updateNicknameSurfaces(player);
                                             context.getSource().sendFeedback(() -> Text.literal("Nickname switched to: " + nickname), true);
+                                            notifyAdmins(context.getSource(), player, "switched to nickname '" + nickname + "'");
                                             return 1;
                                         })))
                         .then(CommandManager.literal("list")
@@ -100,6 +112,7 @@ public final class NickCommandManager {
                                     NicknameSavedData.get(context.getSource().getServer()).clearNickname(player);
                                     updateNicknameSurfaces(player);
                                     context.getSource().sendFeedback(() -> Text.literal("Current nickname cleared."), true);
+                                    notifyAdmins(context.getSource(), player, "cleared their current nickname");
                                     return 1;
                                 }))
                         .then(CommandManager.literal("admin")
@@ -110,15 +123,15 @@ public final class NickCommandManager {
                                                         .executes(context -> {
                                                             ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "player");
                                                             String nickname = StringArgumentType.getString(context, "nickname");
-                                                            String targetName = getEffectiveName(target);
-                                                            NicknameSavedData data = NicknameSavedData.get(context.getSource().getServer());
-                                                            if (target.getWorld().getGameRules().getBoolean(FabricUtilityGameRules.ADMIN_NICKNAME_CHANGES_AFFECT_HISTORY)) {
-                                                                data.addNickname(target, nickname);
-                                                            } else {
-                                                                data.setNickname(target, nickname);
+                                                            if (!validateNickname(context.getSource(), nickname)) {
+                                                                return 0;
                                                             }
+
+                                                            String targetName = getEffectiveName(target);
+                                                            NicknameSavedData.get(context.getSource().getServer()).addNickname(target, nickname);
                                                             updateNicknameSurfaces(target);
                                                             context.getSource().sendFeedback(() -> Text.literal("Set nickname for " + targetName + " to " + nickname), true);
+                                                            notifyAdmins(context.getSource(), target, "was assigned nickname '" + nickname + "'");
                                                             return 1;
                                                         }))))
                                 .then(CommandManager.literal("clear")
@@ -129,6 +142,7 @@ public final class NickCommandManager {
                                                     NicknameSavedData.get(context.getSource().getServer()).clearNickname(target);
                                                     updateNicknameSurfaces(target);
                                                     context.getSource().sendFeedback(() -> Text.literal("Cleared nickname for " + targetName), true);
+                                                    notifyAdmins(context.getSource(), target, "had their current nickname cleared");
                                                     return 1;
                                                 })))
                                 .then(CommandManager.literal("discover")
@@ -217,6 +231,42 @@ public final class NickCommandManager {
 
             return false;
         });
+    }
+
+    private static boolean validateNickname(ServerCommandSource source, String nickname) {
+        int limit = FabricUtilityConfig.nicknameCharacterLimit();
+        if (nickname.length() <= limit) {
+            return true;
+        }
+
+        source.sendError(Text.literal("Nickname is too long. Maximum length is " + limit + " characters."));
+        return false;
+    }
+
+    private static void notifyAdmins(ServerCommandSource source, ServerPlayerEntity target, String action) {
+        if (!target.getWorld().getGameRules().getBoolean(FabricUtilityGameRules.ADMIN_NICKNAME_CHANGE_LOGS)) {
+            return;
+        }
+
+        ServerPlayerEntity actor = null;
+        try {
+            actor = source.getPlayer();
+        } catch (Exception ignored) {
+        }
+
+        String actorName = actor == null ? "Server" : actor.getName().getString();
+        String targetName = target.getName().getString();
+        String text = actor == target
+                ? "[Nick] " + targetName + " " + action
+                : "[Nick] " + actorName + " changed " + targetName + ": " + action;
+        Text message = Text.literal(text)
+                .formatted(Formatting.YELLOW);
+
+        for (ServerPlayerEntity player : source.getServer().getPlayerManager().getPlayerList()) {
+            if (player.hasPermissionLevel(2) && player != actor) {
+                player.sendMessage(message, false);
+            }
+        }
     }
 
     private static void registerPlayerListNames() {

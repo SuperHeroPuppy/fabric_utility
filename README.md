@@ -14,8 +14,8 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - Shift-right-click with an empty hand pets living entities, plays a sound, and spawns heart particles.
 - Gamerule `fabricUtilityAllowPetting` enables or disables petting.
 - Gamerule `fabricUtilityWorldHeightLimit` sets an optional max build height guard. `0` uses vanilla behavior.
-- Gamerule `fabricUtilityAdminNicknameChangesAffectHistory` controls whether admin nickname changes are added to a player's nickname history.
-- `/nick` lets players save, switch, clear, and list nicknames.
+- Gamerule `fabricUtilityAdminNicknameChangesAffectHistory` controls whether operators receive nickname change log messages.
+- `/nick` lets players save, switch, clear, and list nicknames, with a configurable character limit.
 - `/nick admin` lets operators set, clear, discover, inspect history, and list player nicknames.
 - Nicknames are applied to chat, proxy chat, common game messages, join/leave messages, tab list names, and nameplates.
 - `/proxy` provides proximity chat with local, world, and area-based messaging.
@@ -85,6 +85,7 @@ This is a compatibility safety patch for Supplementaries cages that have been ed
 - `defaultPlayerPetVolume`: fallback sound volume.
 - `defaultPlayerPetPitch`: fallback sound pitch.
 - `nicknameSystemEnabled`: enables nickname chat/game-message replacement.
+- `nicknameCharacterLimit`: maximum nickname length. Defaults to `35`.
 - `proxyChatEnabled`: enables the proxy chat system.
 - `proxyChatRangeChunks`: default proximity chat range in chunks.
 - `customPetSounds`: semicolon-separated command-tag sound rules, formatted as `tag=namespace:sound:volume:pitch`.
@@ -106,6 +107,10 @@ Chat areas are stored as chunk tags with the prefix `proxy_area:` and can be man
 
 `fabricUtilityWorldHeightLimit` is a safe max-build-height guard. Values above the vanilla dimension height cannot expand chunk storage at runtime; use dimension type/worldgen data for worlds that need a taller buildable height.
 
-## Nickname History
+## Nickname Logs
 
-`fabricUtilityAdminNicknameChangesAffectHistory` defaults to `true`. When set to `false`, `/nick admin set <player> <nickname>` changes the player's current nickname without adding that nickname to their saved history.
+`fabricUtilityAdminNicknameChangesAffectHistory` defaults to `true`. When enabled, operators receive a `[Nick]` message when players add, switch, remove, clear, or are assigned nicknames. Set it to `false` to disable those admin log messages.
+
+## Nickname Limit
+
+`nicknameCharacterLimit` defaults to `35`. `/nick add <nickname>`, `/nick set <nickname>`, and `/nick admin set <player> <nickname>` reject nicknames longer than the configured limit.

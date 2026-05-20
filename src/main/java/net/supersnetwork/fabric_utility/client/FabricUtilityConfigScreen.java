@@ -35,6 +35,7 @@ public class FabricUtilityConfigScreen extends Screen {
     private ButtonWidget proxyChatToggle;
     private boolean nicknameEnabled;
     private boolean proxyChatEnabled;
+    private TextFieldWidget nicknameLimitField;
     private TextFieldWidget proxyRangeField;
 
     protected FabricUtilityConfigScreen(Screen parent) {
@@ -95,6 +96,9 @@ public class FabricUtilityConfigScreen extends Screen {
             button.setMessage(toggleText("Nicknames", nicknameEnabled));
         }).dimensions(0, 0, 160, FIELD_HEIGHT).build();
         addRow(new ControlRow("Nickname system", "Applies nicknames to chat and game messages.", nicknameToggle));
+
+        nicknameLimitField = textField(FabricUtilityConfig.getValue("nicknameCharacterLimit"));
+        addRow(new FieldRow("Nickname character limit", "Maximum saved nickname length.", nicknameLimitField));
 
         proxyChatToggle = ButtonWidget.builder(toggleText("Proxy chat", proxyChatEnabled), button -> {
             proxyChatEnabled = !proxyChatEnabled;
@@ -243,6 +247,7 @@ public class FabricUtilityConfigScreen extends Screen {
     private void writeConfig() {
         rows.forEach(Row::sync);
         FabricUtilityConfig.setValue("nicknameSystemEnabled", Boolean.toString(nicknameEnabled));
+        FabricUtilityConfig.setValue("nicknameCharacterLimit", nicknameLimitField.getText());
         FabricUtilityConfig.setValue("proxyChatEnabled", Boolean.toString(proxyChatEnabled));
         FabricUtilityConfig.setValue("proxyChatRangeChunks", proxyRangeField.getText());
         FabricUtilityConfig.setValue("maxPlayerPetParticles", maxPlayerParticles.getText());

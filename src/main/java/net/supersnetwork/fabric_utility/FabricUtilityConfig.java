@@ -28,6 +28,7 @@ public final class FabricUtilityConfig {
             "defaultPlayerPetVolume",
             "defaultPlayerPetPitch",
             "nicknameSystemEnabled",
+            "nicknameCharacterLimit",
             "proxyChatEnabled",
             "proxyChatRangeChunks",
             "customPetSounds"
@@ -41,6 +42,7 @@ public final class FabricUtilityConfig {
     private static int maxPlayerPetParticles = 5;
     private static PetSound defaultPlayerPetSound = new PetSound(new Identifier("minecraft","item.brush.brushing.generic"),0.1F,1.8F);
     private static boolean nicknameSystemEnabled = true;
+    private static int nicknameCharacterLimit = 35;
     private static boolean proxyChatEnabled = true;
     private static int proxyChatRangeChunks = 3;
 
@@ -117,6 +119,10 @@ public final class FabricUtilityConfig {
         return nicknameSystemEnabled;
     }
 
+    public static int nicknameCharacterLimit() {
+        return nicknameCharacterLimit;
+    }
+
     public static boolean proxyChatEnabled() {
         return proxyChatEnabled;
     }
@@ -147,6 +153,7 @@ public final class FabricUtilityConfig {
         properties.putIfAbsent("defaultPlayerPetVolume", "0.1");
         properties.putIfAbsent("defaultPlayerPetPitch", "1.8");
         properties.putIfAbsent("nicknameSystemEnabled", "true");
+        properties.putIfAbsent("nicknameCharacterLimit", "35");
         properties.putIfAbsent("proxyChatEnabled", "true");
         properties.putIfAbsent("proxyChatRangeChunks", "3");
         properties.putIfAbsent("customPetSounds", "petting_purr=minecraft:entity.cat.purr:0.7:1.0");
@@ -172,6 +179,7 @@ public final class FabricUtilityConfig {
                 parseFloat(getValue("defaultPlayerPetPitch"), 1.8F)
         );
         nicknameSystemEnabled = Boolean.parseBoolean(getValue("nicknameSystemEnabled"));
+        nicknameCharacterLimit = Math.max(1, parseInt(getValue("nicknameCharacterLimit"), 35));
         proxyChatEnabled = Boolean.parseBoolean(getValue("proxyChatEnabled"));
         proxyChatRangeChunks = parseInt(getValue("proxyChatRangeChunks"), 3);
 
