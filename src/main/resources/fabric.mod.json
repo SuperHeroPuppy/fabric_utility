@@ -9,8 +9,8 @@
     "SuperHeroPuppy"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://www.supersnetwork.com/home",
+    "sources": "https://github.com/SuperHeroPuppy/fabric_utility"
   },
 
   "license": "CC0-1.0",
@@ -23,6 +23,9 @@
     ],
     "modmenu": [
       "net.supersnetwork.fabric_utility.client.FabricUtilityModMenu"
+    ],
+    "jade": [
+      "net.supersnetwork.fabric_utility.compat.FabricUtilityJadePlugin"
     ]
   },
   "mixins": [
@@ -35,6 +38,7 @@
     "java": ">=17"
   },
   "suggests": {
+    "jade": ">=11.13.1",
     "modmenu": ">=7.2.2"
   }
 }

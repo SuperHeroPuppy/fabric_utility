@@ -14,10 +14,11 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - Shift-right-click with an empty hand pets living entities, plays a sound, and spawns heart particles.
 - Gamerule `fabricUtilityAllowPetting` enables or disables petting.
 - Gamerule `fabricUtilityWorldHeightLimit` sets an optional max build height guard. `0` uses vanilla behavior.
-- Gamerule `fabricUtilityAdminNicknameChangesAffectHistory` controls whether operators receive nickname change log messages.
+- Gamerule `fabricUtilityAdminLogCommands` controls whether operators receive admin command feedback for nickname and chunk tag changes.
 - `/nick` lets players save, switch, clear, and list nicknames, with a configurable character limit.
 - `/nick admin` lets operators set, clear, discover, inspect history, and list player nicknames.
 - Nicknames are applied to chat, proxy chat, common game messages, join/leave messages, tab list names, and nameplates.
+- Jade shows player nicknames in entity tooltips when Jade is installed.
 - `/proxy` provides proximity chat with local, world, and area-based messaging.
 - Proxy chat supports pinned modes, do-not-disturb, and configurable ranges.
 - Named chat areas can be created and managed using chunk tagging.
@@ -26,7 +27,6 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - `/fabricutility config` can reload, sync, inspect, and edit server config values.
 - Petting sounds, command-tag sound overrides, player fallback sound, volume, pitch, particle count, and nickname enablement are configurable.
 - Items with the NBT tag `BanHammer` let operators ban punched players for seven days.
-- Non-operators carrying a `supplementaries:cage` containing a command block minecart have that contained entity sanitized into a pig.
 
 ## Commands
 
@@ -70,12 +70,6 @@ Any item with `BanHammer` in its NBT becomes a ban hammer for operators. If the 
 
 Non-operators cannot activate ban hammer items.
 
-## NBT Safety
-
-For non-operators, `supplementaries:cage` items are scanned for embedded `minecraft:command_block_minecart` entity data under their block entity NBT. When found, the embedded entity id is changed to `minecraft:pig` and command-related fields are removed.
-
-This is a compatibility safety patch for Supplementaries cages that have been edited with external NBT tools.
-
 ## Config Keys
 
 - `blockedPettableEntities`: comma-separated entity ids that cannot be pet.
@@ -107,9 +101,9 @@ Chat areas are stored as chunk tags with the prefix `proxy_area:` and can be man
 
 `fabricUtilityWorldHeightLimit` is a safe max-build-height guard. Values above the vanilla dimension height cannot expand chunk storage at runtime; use dimension type/worldgen data for worlds that need a taller buildable height.
 
-## Nickname Logs
+## Admin Command Logs
 
-`fabricUtilityAdminNicknameChangesAffectHistory` defaults to `true`. When enabled, operators receive a `[Nick]` message when players add, switch, remove, clear, or are assigned nicknames. Set it to `false` to disable those admin log messages.
+`fabricUtilityAdminLogCommands` defaults to `true`. When enabled, operators receive admin command feedback when nicknames or chunk tags are changed. Set it to `false` to keep the command response visible only to the command source.
 
 ## Nickname Limit
 

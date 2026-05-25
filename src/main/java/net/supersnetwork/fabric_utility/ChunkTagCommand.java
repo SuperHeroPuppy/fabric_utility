@@ -80,7 +80,7 @@ public final class ChunkTagCommand {
             return 0;
         }
 
-        source.sendFeedback(() -> Text.literal(areaName(subChunkY) + " tagged with: " + describe(tag, values)), true);
+        source.sendFeedback(() -> Text.literal(areaName(subChunkY) + " tagged with: " + describe(tag, values)), shouldBroadcastAdminCommands(source));
         return 1;
     }
 
@@ -96,7 +96,7 @@ public final class ChunkTagCommand {
             return 0;
         }
 
-        source.sendFeedback(() -> Text.literal("Updated " + areaName(subChunkY).toLowerCase() + " tag: " + describe(tag, values)), true);
+        source.sendFeedback(() -> Text.literal("Updated " + areaName(subChunkY).toLowerCase() + " tag: " + describe(tag, values)), shouldBroadcastAdminCommands(source));
         return 1;
     }
 
@@ -111,7 +111,7 @@ public final class ChunkTagCommand {
             return 0;
         }
 
-        source.sendFeedback(() -> Text.literal("Removed tag from " + areaName(subChunkY).toLowerCase() + ": " + tag), true);
+        source.sendFeedback(() -> Text.literal("Removed tag from " + areaName(subChunkY).toLowerCase() + ": " + tag), shouldBroadcastAdminCommands(source));
         return 1;
     }
 
@@ -186,6 +186,10 @@ public final class ChunkTagCommand {
 
     private static String areaName(Optional<Integer> subChunkY) {
         return subChunkY.map(integer -> "Subchunk " + integer).orElse("Chunk");
+    }
+
+    private static boolean shouldBroadcastAdminCommands(ServerCommandSource source) {
+        return source.getWorld().getGameRules().getBoolean(FabricUtilityGameRules.ADMIN_LOG_COMMANDS);
     }
 
     private record ChunkPosition(Identifier dimension, int chunkX, int chunkZ) {
