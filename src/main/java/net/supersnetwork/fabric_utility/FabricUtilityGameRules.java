@@ -14,7 +14,7 @@ public final class FabricUtilityGameRules {
 
     public static void register() {
         ALLOW_PETTING = GameRuleRegistry.register("fabricUtilityAllowPetting", GameRules.Category.MOBS, GameRuleFactory.createBooleanRule(true));
-        WORLD_HEIGHT_LIMIT = GameRuleRegistry.register("fabricUtilityWorldHeightLimit", GameRules.Category.UPDATES, GameRuleFactory.createIntRule(0, 0));
+        WORLD_HEIGHT_LIMIT = GameRuleRegistry.register("fabricUtilityWorldHeightLimit", GameRules.Category.UPDATES, GameRuleFactory.createIntRule(-1, -1));
         ADMIN_LOG_COMMANDS = GameRuleRegistry.register("fabricUtilityAdminLogCommands", GameRules.Category.PLAYER, GameRuleFactory.createBooleanRule(true));
     }
 }

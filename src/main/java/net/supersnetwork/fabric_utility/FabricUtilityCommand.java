@@ -17,12 +17,14 @@ public final class FabricUtilityCommand {
                                 .then(CommandManager.literal("reload")
                                         .executes(context -> {
                                             FabricUtilityConfig.load();
+                                            FabricUtilityConfigNetworking.broadcast(context.getSource().getServer());
                                             context.getSource().sendFeedback(() -> Text.literal("Fabric Utility config reloaded."), true);
                                             return 1;
                                         }))
                                 .then(CommandManager.literal("sync")
                                         .executes(context -> {
                                             FabricUtilityConfig.load();
+                                            FabricUtilityConfigNetworking.broadcast(context.getSource().getServer());
                                             context.getSource().sendFeedback(() -> Text.literal("Fabric Utility config synced from disk to the server."), true);
                                             return 1;
                                         }))
@@ -58,6 +60,7 @@ public final class FabricUtilityCommand {
                                                                 return 0;
                                                             }
 
+                                                            FabricUtilityConfigNetworking.broadcast(context.getSource().getServer());
                                                             context.getSource().sendFeedback(() -> Text.literal("Set " + key + "=" + value), true);
                                                             return 1;
                                                         })))))));

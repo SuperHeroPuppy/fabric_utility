@@ -1,4 +1,5 @@
 {
   "config.jade.plugin_fabric_utility.player_nickname": "Player nickname",
-  "tooltip.fabric_utility.nickname": "Nickname: %s"
+  "tooltip.fabric_utility.nickname": "Nickname: %s",
+  "tooltip.fabric_utility.username": "Username: %s"
 }

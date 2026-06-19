@@ -8,6 +8,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.PersistentState;
+import net.supersnetwork.fabric_utility.api.ChunkTagApi;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,13 +24,16 @@ public class TaggedChunksSavedData extends PersistentState {
     private static final String AREA_TAG_PREFIX = "proxy_area:";
 
     private final Map<String, Map<String, List<String>>> taggedAreas = new HashMap<>();
+    private transient ServerWorld world;
 
     public static TaggedChunksSavedData get(ServerWorld world) {
-        return world.getPersistentStateManager().getOrCreate(
+        TaggedChunksSavedData data = world.getPersistentStateManager().getOrCreate(
                 TaggedChunksSavedData::fromNbt,
                 TaggedChunksSavedData::new,
                 STORAGE_KEY
         );
+        data.world = world;
+        return data;
     }
 
     public static int subChunkY(BlockPos pos) {
@@ -45,6 +49,7 @@ public class TaggedChunksSavedData extends PersistentState {
 
         tags.put(tag, List.copyOf(values));
         markDirty();
+        ChunkTagApi.fireAdded(world, tag, dimension, chunkX, chunkZ, subChunkY, values);
         return true;
     }
 
@@ -55,8 +60,9 @@ public class TaggedChunksSavedData extends PersistentState {
             return false;
         }
 
-        tags.put(tag, List.copyOf(values));
+        List<String> previous = tags.put(tag, List.copyOf(values));
         markDirty();
+        ChunkTagApi.fireUpdated(world, tag, dimension, chunkX, chunkZ, subChunkY, previous, values);
         return true;
     }
 
@@ -68,13 +74,14 @@ public class TaggedChunksSavedData extends PersistentState {
             return false;
         }
 
-        tags.remove(tag);
+        List<String> previous = tags.remove(tag);
 
         if (tags.isEmpty()) {
             taggedAreas.remove(key);
         }
 
         markDirty();
+        ChunkTagApi.fireRemoved(world, tag, dimension, chunkX, chunkZ, subChunkY, previous);
         return true;
     }
 

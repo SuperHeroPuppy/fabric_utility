@@ -60,6 +60,17 @@ public class NicknameSavedData extends PersistentState {
         return data == null ? List.of() : List.copyOf(data.history);
     }
 
+    public Optional<Integer> getColor(ServerPlayerEntity player) {
+        PlayerNicknames data = nicknames.get(player.getUuid());
+        return data == null || data.color < 0 ? Optional.empty() : Optional.of(data.color);
+    }
+
+    public void setColor(ServerPlayerEntity player, Integer color) {
+        PlayerNicknames data = nicknames.computeIfAbsent(player.getUuid(), ignored -> new PlayerNicknames());
+        data.color = color == null ? -1 : color & 0xFFFFFF;
+        markDirty();
+    }
+
     public void clearNickname(ServerPlayerEntity player) {
         PlayerNicknames data = nicknames.computeIfAbsent(player.getUuid(), ignored -> new PlayerNicknames());
         data.current = "";
@@ -85,6 +96,7 @@ public class NicknameSavedData extends PersistentState {
             NbtCompound playerNbt = players.getCompound(i);
             PlayerNicknames playerNicknames = new PlayerNicknames();
             playerNicknames.current = playerNbt.getString("current");
+            playerNicknames.color = playerNbt.contains("color", NbtElement.INT_TYPE) ? playerNbt.getInt("color") : -1;
 
             NbtList history = playerNbt.getList("history", NbtElement.STRING_TYPE);
             for (int j = 0; j < history.size(); j++) {
@@ -105,6 +117,7 @@ public class NicknameSavedData extends PersistentState {
             NbtCompound playerNbt = new NbtCompound();
             playerNbt.putUuid("uuid", entry.getKey());
             playerNbt.putString("current", entry.getValue().current);
+            playerNbt.putInt("color", entry.getValue().color);
 
             NbtList history = new NbtList();
             for (String nickname : entry.getValue().history) {
@@ -121,6 +134,7 @@ public class NicknameSavedData extends PersistentState {
 
     private static final class PlayerNicknames {
         private String current = "";
+        private int color = -1;
         private final List<String> history = new ArrayList<>();
     }
 }

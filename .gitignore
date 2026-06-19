@@ -36,3 +36,5 @@ run/
 /fabric_utility-*.jar
 /fabric_utility-*-dev.jar
 /fabric_utility-*-sources.jar
+
+DEVELOPMENT_LIST.md

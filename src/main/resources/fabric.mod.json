@@ -21,6 +21,9 @@
     "main": [
       "net.supersnetwork.fabric_utility.FabricUtility"
     ],
+    "client": [
+      "net.supersnetwork.fabric_utility.client.FabricUtilityClient"
+    ],
     "modmenu": [
       "net.supersnetwork.fabric_utility.client.FabricUtilityModMenu"
     ],

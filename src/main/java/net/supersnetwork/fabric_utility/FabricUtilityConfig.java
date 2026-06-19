@@ -1,13 +1,18 @@
 package net.supersnetwork.fabric_utility;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.registry.Registries;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -20,6 +25,7 @@ import java.util.Properties;
 import java.util.Set;
 
 public final class FabricUtilityConfig {
+    public static final int CONFIG_VERSION = 2;
     public static final List<String> CONFIG_KEYS = List.of(
             "blockedPettableEntities",
             "pettingSoundSuffixes",
@@ -34,13 +40,15 @@ public final class FabricUtilityConfig {
             "customPetSounds"
     );
 
-    private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("fabric_utility.properties");
-    private static final Properties PROPERTIES = new Properties();
+    private static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("fabric_utility.json");
+    private static final Path LEGACY_CONFIG_PATH = FabricLoader.getInstance().getConfigDir().resolve("fabric_utility.properties");
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Map<String, String> VALUES = new LinkedHashMap<>();
     private static final Set<Identifier> BLOCKED_PETTABLE_ENTITIES = new HashSet<>();
     private static final Map<String, PetSound> CUSTOM_PET_SOUNDS = new LinkedHashMap<>();
-    private static List<String> pettingSoundSuffixes = List.of("ambient","step","hurt","death");
+    private static List<String> pettingSoundSuffixes = List.of("ambient", "step", "hurt", "death");
     private static int maxPlayerPetParticles = 5;
-    private static PetSound defaultPlayerPetSound = new PetSound(new Identifier("minecraft","item.brush.brushing.generic"),0.1F,1.8F);
+    private static PetSound defaultPlayerPetSound = new PetSound(new Identifier("minecraft", "item.brush.brushing.generic"), 0.1F, 1.8F);
     private static boolean nicknameSystemEnabled = true;
     private static int nicknameCharacterLimit = 35;
     private static boolean proxyChatEnabled = true;
@@ -49,54 +57,69 @@ public final class FabricUtilityConfig {
     private FabricUtilityConfig() {
     }
 
-    public static void load() {
-        applyDefaults(PROPERTIES);
+    public static synchronized void load() {
+        VALUES.clear();
+        VALUES.putAll(defaultValues());
 
-        if (Files.notExists(CONFIG_PATH)) {
+        if (Files.exists(CONFIG_PATH)) {
+            loadJson();
+        } else if (Files.exists(LEGACY_CONFIG_PATH)) {
+            migrateLegacyProperties();
+            save();
+        } else {
             save();
         }
 
-        try (InputStream input = Files.newInputStream(CONFIG_PATH)) {
-            PROPERTIES.load(input);
-        } catch (IOException exception) {
-            FabricUtility.LOGGER.warn("Failed to read config, using defaults", exception);
-        }
-
-        parseLoadedProperties();
+        parseLoadedValues();
     }
 
-    public static void save() {
+    public static synchronized void save() {
+        JsonObject root = new JsonObject();
+        root.addProperty("version", CONFIG_VERSION);
+        JsonObject values = new JsonObject();
+        CONFIG_KEYS.forEach(key -> values.addProperty(key, VALUES.getOrDefault(key, "")));
+        root.add("values", values);
+
         try {
             Files.createDirectories(CONFIG_PATH.getParent());
-            try (OutputStream output = Files.newOutputStream(CONFIG_PATH)) {
-                PROPERTIES.store(output, "Fabric Utility config");
+            try (Writer writer = Files.newBufferedWriter(CONFIG_PATH)) {
+                GSON.toJson(root, writer);
             }
         } catch (IOException exception) {
             FabricUtility.LOGGER.warn("Failed to write config", exception);
         }
     }
 
-    public static boolean setValue(String key, String value) {
+    public static synchronized boolean setValue(String key, String value) {
         if (!CONFIG_KEYS.contains(key)) {
             return false;
         }
 
-        PROPERTIES.setProperty(key, value);
-        parseLoadedProperties();
+        VALUES.put(key, normalize(key, value));
+        parseLoadedValues();
         save();
         return true;
     }
 
-    public static String getValue(String key) {
-        return PROPERTIES.getProperty(key, "");
+    public static synchronized boolean setValues(Map<String, String> values) {
+        if (!values.keySet().stream().allMatch(CONFIG_KEYS::contains)) {
+            return false;
+        }
+
+        values.forEach((key, value) -> VALUES.put(key, normalize(key, value)));
+        parseLoadedValues();
+        save();
+        return true;
     }
 
-    public static Map<String, String> values() {
-        Map<String, String> values = new LinkedHashMap<>();
-        for (String key : CONFIG_KEYS) {
-            values.put(key, getValue(key));
-        }
-        return values;
+    public static synchronized String getValue(String key) {
+        return VALUES.getOrDefault(key, "");
+    }
+
+    public static synchronized Map<String, String> values() {
+        Map<String, String> result = new LinkedHashMap<>();
+        CONFIG_KEYS.forEach(key -> result.put(key, getValue(key)));
+        return result;
     }
 
     public static boolean isPettingBlocked(Identifier entityId) {
@@ -137,7 +160,6 @@ public final class FabricUtilityConfig {
                 return Optional.of(entry.getValue());
             }
         }
-
         return Optional.empty();
     }
 
@@ -145,27 +167,75 @@ public final class FabricUtilityConfig {
         return Registries.SOUND_EVENT.containsId(id) ? Optional.of(Registries.SOUND_EVENT.get(id)) : Optional.empty();
     }
 
-    private static void applyDefaults(Properties properties) {
-        properties.putIfAbsent("blockedPettableEntities", "minecraft:armor_stand,minecraft:item_frame,minecraft:painting,scrimblos:scrimblo");
-        properties.putIfAbsent("pettingSoundSuffixes", "ambient,step,hurt,death");
-        properties.putIfAbsent("maxPlayerPetParticles", "5");
-        properties.putIfAbsent("defaultPlayerPetSound", "minecraft:item.brush.brushing.generic");
-        properties.putIfAbsent("defaultPlayerPetVolume", "0.1");
-        properties.putIfAbsent("defaultPlayerPetPitch", "1.8");
-        properties.putIfAbsent("nicknameSystemEnabled", "true");
-        properties.putIfAbsent("nicknameCharacterLimit", "35");
-        properties.putIfAbsent("proxyChatEnabled", "true");
-        properties.putIfAbsent("proxyChatRangeChunks", "3");
-        properties.putIfAbsent("customPetSounds", "petting_purr=minecraft:entity.cat.purr:0.7:1.0");
+    private static Map<String, String> defaultValues() {
+        Map<String, String> defaults = new LinkedHashMap<>();
+        defaults.put("blockedPettableEntities", "minecraft:armor_stand,minecraft:item_frame,minecraft:painting,scrimblos:scrimblo");
+        defaults.put("pettingSoundSuffixes", "ambient,step,hurt,death");
+        defaults.put("maxPlayerPetParticles", "5");
+        defaults.put("defaultPlayerPetSound", "minecraft:item.brush.brushing.generic");
+        defaults.put("defaultPlayerPetVolume", "0.1");
+        defaults.put("defaultPlayerPetPitch", "1.8");
+        defaults.put("nicknameSystemEnabled", "true");
+        defaults.put("nicknameCharacterLimit", "35");
+        defaults.put("proxyChatEnabled", "true");
+        defaults.put("proxyChatRangeChunks", "3");
+        defaults.put("customPetSounds", "petting_purr=minecraft:entity.cat.purr:0.7:1.0");
+        return defaults;
     }
 
-    private static void parseLoadedProperties() {
+    private static void loadJson() {
+        try (Reader reader = Files.newBufferedReader(CONFIG_PATH)) {
+            JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+            JsonObject values = root.has("values") && root.get("values").isJsonObject()
+                    ? root.getAsJsonObject("values")
+                    : root;
+            for (String key : CONFIG_KEYS) {
+                JsonElement element = values.get(key);
+                if (element != null && element.isJsonPrimitive()) {
+                    VALUES.put(key, normalize(key, element.getAsString()));
+                }
+            }
+        } catch (Exception exception) {
+            FabricUtility.LOGGER.warn("Failed to read config, using defaults", exception);
+        }
+    }
+
+    private static void migrateLegacyProperties() {
+        Properties properties = new Properties();
+        try (Reader reader = Files.newBufferedReader(LEGACY_CONFIG_PATH)) {
+            properties.load(reader);
+            for (String key : CONFIG_KEYS) {
+                if (properties.containsKey(key)) {
+                    VALUES.put(key, normalize(key, properties.getProperty(key)));
+                }
+            }
+            FabricUtility.LOGGER.info("Migrated legacy Fabric Utility properties config to {}", CONFIG_PATH);
+        } catch (IOException exception) {
+            FabricUtility.LOGGER.warn("Failed to migrate legacy config, using defaults", exception);
+        }
+    }
+
+    private static String normalize(String key, String value) {
+        String input = value == null ? "" : value.trim();
+        return switch (key) {
+            case "nicknameSystemEnabled", "proxyChatEnabled" -> Boolean.toString(Boolean.parseBoolean(input));
+            case "maxPlayerPetParticles" -> Integer.toString(Math.max(0, parseInt(input, 5)));
+            case "nicknameCharacterLimit" -> Integer.toString(Math.max(1, parseInt(input, 35)));
+            case "proxyChatRangeChunks" -> Integer.toString(Math.max(1, Math.min(16, parseInt(input, 3))));
+            case "defaultPlayerPetVolume" -> Float.toString(Math.max(0.0F, parseFloat(input, 0.1F)));
+            case "defaultPlayerPetPitch" -> Float.toString(Math.max(0.0F, parseFloat(input, 1.8F)));
+            case "defaultPlayerPetSound" -> Identifier.tryParse(input) == null ? "minecraft:item.brush.brushing.generic" : input;
+            default -> input;
+        };
+    }
+
+    private static void parseLoadedValues() {
         BLOCKED_PETTABLE_ENTITIES.clear();
         Arrays.stream(getValue("blockedPettableEntities").split(","))
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
                 .map(Identifier::tryParse)
-                .filter(identifier -> identifier != null)
+                .filter(java.util.Objects::nonNull)
                 .forEach(BLOCKED_PETTABLE_ENTITIES::add);
 
         pettingSoundSuffixes = Arrays.stream(getValue("pettingSoundSuffixes").split(","))
@@ -181,7 +251,7 @@ public final class FabricUtilityConfig {
         nicknameSystemEnabled = Boolean.parseBoolean(getValue("nicknameSystemEnabled"));
         nicknameCharacterLimit = Math.max(1, parseInt(getValue("nicknameCharacterLimit"), 35));
         proxyChatEnabled = Boolean.parseBoolean(getValue("proxyChatEnabled"));
-        proxyChatRangeChunks = parseInt(getValue("proxyChatRangeChunks"), 3);
+        proxyChatRangeChunks = Math.max(1, Math.min(16, parseInt(getValue("proxyChatRangeChunks"), 3)));
 
         CUSTOM_PET_SOUNDS.clear();
         Arrays.stream(getValue("customPetSounds").split(";"))

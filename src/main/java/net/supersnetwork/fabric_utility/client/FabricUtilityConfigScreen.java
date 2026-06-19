@@ -6,11 +6,16 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.supersnetwork.fabric_utility.FabricUtilityConfig;
+import net.supersnetwork.fabric_utility.FabricUtilityConfigNetworking;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class FabricUtilityConfigScreen extends Screen {
@@ -46,6 +51,9 @@ public class FabricUtilityConfigScreen extends Screen {
 
     @Override
     protected void init() {
+        if (ClientPlayNetworking.canSend(FabricUtilityConfigNetworking.REQUEST_CONFIG)) {
+            ClientPlayNetworking.send(FabricUtilityConfigNetworking.REQUEST_CONFIG, PacketByteBufs.empty());
+        }
         rebuildRows();
     }
 
@@ -97,7 +105,7 @@ public class FabricUtilityConfigScreen extends Screen {
         }).dimensions(0, 0, 160, FIELD_HEIGHT).build();
         addRow(new ControlRow("Nickname system", "Applies nicknames to chat and game messages.", nicknameToggle));
 
-        nicknameLimitField = textField(FabricUtilityConfig.getValue("nicknameCharacterLimit"));
+        nicknameLimitField = textField(configValue("nicknameCharacterLimit"));
         addRow(new FieldRow("Nickname character limit", "Maximum saved nickname length.", nicknameLimitField));
 
         proxyChatToggle = ButtonWidget.builder(toggleText("Proxy chat", proxyChatEnabled), button -> {
@@ -106,16 +114,16 @@ public class FabricUtilityConfigScreen extends Screen {
         }).dimensions(0, 0, 160, FIELD_HEIGHT).build();
         addRow(new ControlRow("Proxy chat", "Enables chunk-limited local chat.", proxyChatToggle));
 
-        proxyRangeField = textField(FabricUtilityConfig.getValue("proxyChatRangeChunks"));
+        proxyRangeField = textField(configValue("proxyChatRangeChunks"));
         addRow(new FieldRow("Proxy range chunks", "Local chat radius in chunks.", proxyRangeField));
 
         addSection("Petting");
-        maxPlayerParticles = textField(FabricUtilityConfig.getValue("maxPlayerPetParticles"));
+        maxPlayerParticles = textField(configValue("maxPlayerPetParticles"));
         addRow(new FieldRow("Max player particles", "Caps heart particles when petting players.", maxPlayerParticles));
-        defaultSound = textField(FabricUtilityConfig.getValue("defaultPlayerPetSound"));
+        defaultSound = textField(configValue("defaultPlayerPetSound"));
         addRow(new FieldRow("Default player sound", "Sound id used for players and fallback pet sounds.", defaultSound, true));
-        defaultVolume = textField(FabricUtilityConfig.getValue("defaultPlayerPetVolume"));
-        defaultPitch = textField(FabricUtilityConfig.getValue("defaultPlayerPetPitch"));
+        defaultVolume = textField(configValue("defaultPlayerPetVolume"));
+        defaultPitch = textField(configValue("defaultPlayerPetPitch"));
         addRow(new TwoFieldRow("Default volume", defaultVolume, "Default pitch", defaultPitch));
 
         addListSection("Blocked Pettable Entities", "Entity ids that cannot be pet.", blockedEntities, () -> {
@@ -173,6 +181,7 @@ public class FabricUtilityConfigScreen extends Screen {
             writeConfig();
             close();
         }).dimensions(width / 2 - 154, height - 25, 150, 20).build();
+        save.active = !FabricUtilityClientConfig.isConnectedToModdedServer() || FabricUtilityClientConfig.canEditServer();
         ButtonWidget cancel = ButtonWidget.builder(Text.literal("Cancel"), button -> close())
                 .dimensions(width / 2 + 4, height - 25, 150, 20)
                 .build();
@@ -237,26 +246,48 @@ public class FabricUtilityConfigScreen extends Screen {
     }
 
     private void readConfig() {
-        nicknameEnabled = Boolean.parseBoolean(FabricUtilityConfig.getValue("nicknameSystemEnabled"));
-        proxyChatEnabled = Boolean.parseBoolean(FabricUtilityConfig.getValue("proxyChatEnabled"));
-        splitList(FabricUtilityConfig.getValue("blockedPettableEntities")).forEach(value -> blockedEntities.add(new ListValue(value)));
-        splitList(FabricUtilityConfig.getValue("pettingSoundSuffixes")).forEach(value -> soundSuffixes.add(new ListValue(value)));
-        splitList(FabricUtilityConfig.getValue("customPetSounds"), ";").forEach(value -> customSounds.add(CustomSoundValue.parse(value)));
+        blockedEntities.clear();
+        soundSuffixes.clear();
+        customSounds.clear();
+        nicknameEnabled = Boolean.parseBoolean(configValue("nicknameSystemEnabled"));
+        proxyChatEnabled = Boolean.parseBoolean(configValue("proxyChatEnabled"));
+        splitList(configValue("blockedPettableEntities")).forEach(value -> blockedEntities.add(new ListValue(value)));
+        splitList(configValue("pettingSoundSuffixes")).forEach(value -> soundSuffixes.add(new ListValue(value)));
+        splitList(configValue("customPetSounds"), ";").forEach(value -> customSounds.add(CustomSoundValue.parse(value)));
+    }
+
+    public void refreshFromServer() {
+        readConfig();
+        rebuildRows();
     }
 
     private void writeConfig() {
         rows.forEach(Row::sync);
-        FabricUtilityConfig.setValue("nicknameSystemEnabled", Boolean.toString(nicknameEnabled));
-        FabricUtilityConfig.setValue("nicknameCharacterLimit", nicknameLimitField.getText());
-        FabricUtilityConfig.setValue("proxyChatEnabled", Boolean.toString(proxyChatEnabled));
-        FabricUtilityConfig.setValue("proxyChatRangeChunks", proxyRangeField.getText());
-        FabricUtilityConfig.setValue("maxPlayerPetParticles", maxPlayerParticles.getText());
-        FabricUtilityConfig.setValue("defaultPlayerPetSound", defaultSound.getText());
-        FabricUtilityConfig.setValue("defaultPlayerPetVolume", defaultVolume.getText());
-        FabricUtilityConfig.setValue("defaultPlayerPetPitch", defaultPitch.getText());
-        FabricUtilityConfig.setValue("blockedPettableEntities", joinList(blockedEntities));
-        FabricUtilityConfig.setValue("pettingSoundSuffixes", joinList(soundSuffixes));
-        FabricUtilityConfig.setValue("customPetSounds", joinCustomSounds());
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("nicknameSystemEnabled", Boolean.toString(nicknameEnabled));
+        values.put("nicknameCharacterLimit", nicknameLimitField.getText());
+        values.put("proxyChatEnabled", Boolean.toString(proxyChatEnabled));
+        values.put("proxyChatRangeChunks", proxyRangeField.getText());
+        values.put("maxPlayerPetParticles", maxPlayerParticles.getText());
+        values.put("defaultPlayerPetSound", defaultSound.getText());
+        values.put("defaultPlayerPetVolume", defaultVolume.getText());
+        values.put("defaultPlayerPetPitch", defaultPitch.getText());
+        values.put("blockedPettableEntities", joinList(blockedEntities));
+        values.put("pettingSoundSuffixes", joinList(soundSuffixes));
+        values.put("customPetSounds", joinCustomSounds());
+
+        if (FabricUtilityClientConfig.isConnectedToModdedServer()
+                && ClientPlayNetworking.canSend(FabricUtilityConfigNetworking.UPDATE_CONFIG)) {
+            var buf = PacketByteBufs.create();
+            FabricUtilityConfigNetworking.writeValues(buf, values);
+            ClientPlayNetworking.send(FabricUtilityConfigNetworking.UPDATE_CONFIG, buf);
+        } else {
+            FabricUtilityConfig.setValues(values);
+        }
+    }
+
+    private String configValue(String key) {
+        return FabricUtilityClientConfig.getValue(key);
     }
 
     private List<String> splitList(String value) {

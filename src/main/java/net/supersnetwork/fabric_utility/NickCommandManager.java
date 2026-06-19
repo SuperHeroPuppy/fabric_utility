@@ -16,6 +16,7 @@ import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableTextContent;
+import net.supersnetwork.fabric_utility.api.NicknameApi;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,11 +39,11 @@ public final class NickCommandManager {
     }
 
     public static Optional<String> getNickname(ServerPlayerEntity player) {
-        return NicknameSavedData.get(player.getServer()).getNickname(player);
+        return NicknameApi.getNickname(player);
     }
 
     public static String getEffectiveName(ServerPlayerEntity player) {
-        return getNickname(player).orElse(player.getName().getString());
+        return NicknameApi.getEffectiveName(player);
     }
 
     private static void registerCommands() {
@@ -57,8 +58,7 @@ public final class NickCommandManager {
                                                 return 0;
                                             }
 
-                                            NicknameSavedData.get(context.getSource().getServer()).addNickname(player, nickname);
-                                            updateNicknameSurfaces(player);
+                                            NicknameApi.setNickname(player, nickname);
                                             context.getSource().sendFeedback(() -> Text.literal("Nickname added and set: " + nickname), shouldBroadcastAdminCommands(context.getSource()));
                                             return 1;
                                         })))
@@ -68,8 +68,7 @@ public final class NickCommandManager {
                                         .executes(context -> {
                                             ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
                                             String nickname = StringArgumentType.getString(context, "nickname");
-                                            NicknameSavedData.get(context.getSource().getServer()).removeFromHistory(player, nickname);
-                                            updateNicknameSurfaces(player);
+                                            NicknameApi.removeFromHistory(player, nickname);
                                             context.getSource().sendFeedback(() -> Text.literal("Removed nickname from history: " + nickname), shouldBroadcastAdminCommands(context.getSource()));
                                             return 1;
                                         })))
@@ -79,20 +78,12 @@ public final class NickCommandManager {
                                         .executes(context -> {
                                             ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
                                             String nickname = StringArgumentType.getString(context, "nickname");
-                                            NicknameSavedData data = NicknameSavedData.get(context.getSource().getServer());
-
                                             if (!validateNickname(context.getSource(), nickname)) {
                                                 return 0;
                                             }
 
-                                            if (!data.getHistory(player).contains(nickname)) {
-                                                context.getSource().sendError(Text.literal("Nickname not in your history!"));
-                                                return 0;
-                                            }
-
-                                            data.setNickname(player, nickname);
-                                            updateNicknameSurfaces(player);
-                                            context.getSource().sendFeedback(() -> Text.literal("Nickname switched to: " + nickname), shouldBroadcastAdminCommands(context.getSource()));
+                                            NicknameApi.setNickname(player, nickname);
+                                            context.getSource().sendFeedback(() -> Text.literal("Nickname set to: " + nickname), shouldBroadcastAdminCommands(context.getSource()));
                                             return 1;
                                         })))
                         .then(CommandManager.literal("list")
@@ -105,8 +96,7 @@ public final class NickCommandManager {
                         .then(CommandManager.literal("clear")
                                 .executes(context -> {
                                     ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-                                    NicknameSavedData.get(context.getSource().getServer()).clearNickname(player);
-                                    updateNicknameSurfaces(player);
+                                    NicknameApi.clearNickname(player);
                                     context.getSource().sendFeedback(() -> Text.literal("Current nickname cleared."), shouldBroadcastAdminCommands(context.getSource()));
                                     return 1;
                                 }))
@@ -123,8 +113,7 @@ public final class NickCommandManager {
                                                             }
 
                                                             String targetName = getEffectiveName(target);
-                                                            NicknameSavedData.get(context.getSource().getServer()).addNickname(target, nickname);
-                                                            updateNicknameSurfaces(target);
+                                                            NicknameApi.setNickname(target, nickname);
                                                             context.getSource().sendFeedback(() -> Text.literal("Set nickname for " + targetName + " to " + nickname), shouldBroadcastAdminCommands(context.getSource()));
                                                             return 1;
                                                         }))))
@@ -133,8 +122,7 @@ public final class NickCommandManager {
                                                 .executes(context -> {
                                                     ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "player");
                                                     String targetName = getEffectiveName(target);
-                                                    NicknameSavedData.get(context.getSource().getServer()).clearNickname(target);
-                                                    updateNicknameSurfaces(target);
+                                                    NicknameApi.clearNickname(target);
                                                     context.getSource().sendFeedback(() -> Text.literal("Cleared nickname for " + targetName), shouldBroadcastAdminCommands(context.getSource()));
                                                     return 1;
                                                 })))
@@ -161,7 +149,17 @@ public final class NickCommandManager {
                                                     return 1;
                                                 })))
                                 .then(CommandManager.literal("list")
-                                        .executes(NickCommandManager::listAdmin)))));
+                                        .executes(NickCommandManager::listAdmin)))
+                        .then(CommandManager.literal("color")
+                                .then(CommandManager.literal("clear")
+                                        .executes(context -> {
+                                            ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+                                            NicknameApi.setColor(player, null);
+                                            context.getSource().sendFeedback(() -> Text.literal("Nickname color cleared."), false);
+                                            return 1;
+                                        }))
+                                .then(CommandManager.argument("hex", StringArgumentType.word())
+                                        .executes(context -> setNicknameColor(context, StringArgumentType.getString(context, "hex")))))));
     }
 
     private static void registerMessages() {
@@ -191,7 +189,10 @@ public final class NickCommandManager {
 
             try {
                 SENDING_REPLACEMENT_MESSAGE.set(true);
-                sender.getServer().getPlayerManager().broadcast(Text.literal("<" + nickname.get() + "> " + message.getContent().getString()), false);
+                sender.getServer().getPlayerManager().broadcast(
+                        Text.literal("<").append(NicknameApi.getDisplayName(sender)).append(Text.literal("> " + message.getContent().getString())),
+                        false
+                );
             } finally {
                 SENDING_REPLACEMENT_MESSAGE.set(false);
             }
@@ -241,7 +242,7 @@ public final class NickCommandManager {
             rememberNameReplacement(handler.player);
             updateNameplate(handler.player);
         });
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> updateNicknameSurfaces(handler.player));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> refreshPlayer(handler.player));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> rememberNameReplacement(handler.player));
     }
 
@@ -249,7 +250,7 @@ public final class NickCommandManager {
         player.getServer().getPlayerManager().sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME, player));
     }
 
-    private static void updateNicknameSurfaces(ServerPlayerEntity player) {
+    public static void refreshPlayer(ServerPlayerEntity player) {
         rememberNameReplacement(player);
         updateNameplate(player);
         updatePlayerListName(player);
@@ -258,7 +259,7 @@ public final class NickCommandManager {
     private static void updateNameplate(ServerPlayerEntity player) {
         Optional<String> nickname = FabricUtilityConfig.nicknameSystemEnabled() ? getNickname(player) : Optional.empty();
         if (nickname.isPresent()) {
-            player.setCustomName(Text.literal(nickname.get()));
+            player.setCustomName(NicknameApi.getDisplayName(player));
             player.setCustomNameVisible(true);
         } else {
             player.setCustomName(null);
@@ -377,6 +378,20 @@ public final class NickCommandManager {
         }
 
         context.getSource().sendFeedback(() -> Text.literal("Players and nicknames: " + result), true);
+        return 1;
+    }
+
+    private static int setNicknameColor(CommandContext<ServerCommandSource> context, String rawHex) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        String normalized = rawHex.startsWith("#") ? rawHex.substring(1) : rawHex;
+        if (!normalized.matches("[0-9a-fA-F]{6}")) {
+            context.getSource().sendError(Text.literal("Nickname color must be a six-digit hex value, such as #55AAFF."));
+            return 0;
+        }
+
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        int color = Integer.parseInt(normalized, 16);
+        NicknameApi.setColor(player, color);
+        context.getSource().sendFeedback(() -> Text.literal("Nickname color updated to #" + normalized.toUpperCase() + "."), false);
         return 1;
     }
 }

@@ -13,17 +13,19 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - Entity command tag `invulnerability` prevents damage, death, fire, fall damage, and knockback.
 - Shift-right-click with an empty hand pets living entities, plays a sound, and spawns heart particles.
 - Gamerule `fabricUtilityAllowPetting` enables or disables petting.
-- Gamerule `fabricUtilityWorldHeightLimit` sets an optional max build height guard. `0` uses vanilla behavior.
+- Gamerule `fabricUtilityWorldHeightLimit` controls generated Overworld height data. `-1` inherits the active dimension type; non-negative values request max Y `320 + value`.
 - Gamerule `fabricUtilityAdminLogCommands` controls whether operators receive admin command feedback for nickname and chunk tag changes.
-- `/nick` lets players save, switch, clear, and list nicknames, with a configurable character limit.
+- `/nick set` directly changes a player's nickname while retaining nickname history, with a configurable character limit.
+- `/nick color <hex|clear>` applies an optional RGB nickname color.
 - `/nick admin` lets operators set, clear, discover, inspect history, and list player nicknames.
 - Nicknames are applied to chat, proxy chat, common game messages, join/leave messages, tab list names, and nameplates.
-- Jade shows player nicknames in entity tooltips when Jade is installed.
+- Jade uses the nickname as the player tooltip title and shows the account username below it.
 - `/proxy` provides proximity chat with local, world, and area-based messaging.
 - Proxy chat supports pinned modes, do-not-disturb, and configurable ranges.
 - Named chat areas can be created and managed using chunk tagging.
-- Config file `config/fabric_utility.properties` can block entity ids from being pettable.
+- Server config is stored in `config/fabric_utility.json`; legacy properties files migrate automatically.
 - Mod Menu can open a client-side config editor when Mod Menu is installed.
+- Operators can edit the connected server's config from Mod Menu; changes are validated, saved server-side, and synchronized to connected clients.
 - `/fabricutility config` can reload, sync, inspect, and edit server config values.
 - Petting sounds, command-tag sound overrides, player fallback sound, volume, pitch, particle count, and nickname enablement are configurable.
 - Items with the NBT tag `BanHammer` let operators ban punched players for seven days.
@@ -50,6 +52,8 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - `/nick set <nickname>`
 - `/nick list`
 - `/nick clear`
+- `/nick color <hex>`
+- `/nick color clear`
 - `/nick admin set <player> <nickname>`
 - `/nick admin clear <player>`
 - `/nick admin discover <player>`
@@ -99,7 +103,11 @@ Chat areas are stored as chunk tags with the prefix `proxy_area:` and can be man
 
 ## Height Limit
 
-`fabricUtilityWorldHeightLimit` is a safe max-build-height guard. Values above the vanilla dimension height cannot expand chunk storage at runtime; use dimension type/worldgen data for worlds that need a taller buildable height.
+`fabricUtilityWorldHeightLimit` defaults to `-1`, which inherits the active dimension type. A non-negative value generates a world datapack for an Overworld max Y of `320 + value`. Minecraft dimension heights use 16-block sections, so additions are rounded up to the next multiple of 16. Height changes require a server restart because loaded chunk storage cannot be resized safely.
+
+## Public API
+
+Other mods can resolve and update nicknames, listen for nickname changes, query or mutate chunk tags, and register behavior for custom tags. See [API.md](API.md).
 
 ## Admin Command Logs
 

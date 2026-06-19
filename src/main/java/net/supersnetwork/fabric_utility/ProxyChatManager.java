@@ -18,6 +18,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.supersnetwork.fabric_utility.api.NicknameApi;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -145,20 +146,19 @@ public final class ProxyChatManager {
             return 0;
         }
 
-        String displayName = NickCommandManager.getEffectiveName(sender);
-        Text whisperMessage = Text.literal("[Whisper] <" + displayName + "> " + message);
+        Text displayName = NicknameApi.getDisplayName(sender);
+        Text whisperMessage = Text.literal("[Whisper] <").append(displayName).append(Text.literal("> " + message));
         target.sendMessage(whisperMessage, false);
-        sender.sendMessage(Text.literal("[Whisper to " + target.getName().getString() + "] " + message), false);
+        sender.sendMessage(Text.literal("[Whisper to ").append(NicknameApi.getDisplayName(target)).append(Text.literal("] " + message)), false);
         return 1;
     }
 
     private static int sendAction(CommandContext<ServerCommandSource> context, String message) throws CommandSyntaxException {
         ServerPlayerEntity sender = context.getSource().getPlayerOrThrow();
-        String displayName = NickCommandManager.getEffectiveName(sender);
-        Text actionMessage = Text.literal("* " + displayName + " " + message);
+        Text actionMessage = Text.literal("* ").append(NicknameApi.getDisplayName(sender)).append(Text.literal(" " + message));
 
         for (ServerPlayerEntity recipient : sender.getServer().getPlayerManager().getPlayerList()) {
-            if (shouldReceive(recipient, sender, ChatChannel.WORLD)) {
+            if (!FabricUtilityConfig.proxyChatEnabled() || shouldReceive(recipient, sender, ChatChannel.WORLD)) {
                 recipient.sendMessage(actionMessage, false);
             }
         }
@@ -281,9 +281,9 @@ public final class ProxyChatManager {
             return;
         }
 
-        String displayName = useNickname && FabricUtilityConfig.nicknameSystemEnabled()
-                ? NickCommandManager.getEffectiveName(sender)
-                : sender.getName().getString();
+        Text displayName = useNickname && FabricUtilityConfig.nicknameSystemEnabled()
+                ? NicknameApi.getDisplayName(sender)
+                : Text.literal(sender.getGameProfile().getName());
         Text message = formatMessage(ChatChannel.LOCAL, displayName, rawText);
 
         for (ServerPlayerEntity recipient : sender.getServer().getPlayerManager().getPlayerList()) {
@@ -301,9 +301,9 @@ public final class ProxyChatManager {
     }
 
     private static void sendChat(ServerPlayerEntity sender, String rawText, boolean useNickname, ChatChannel channel) {
-        String displayName = useNickname && FabricUtilityConfig.nicknameSystemEnabled()
-                ? NickCommandManager.getEffectiveName(sender)
-                : sender.getName().getString();
+        Text displayName = useNickname && FabricUtilityConfig.nicknameSystemEnabled()
+                ? NicknameApi.getDisplayName(sender)
+                : Text.literal(sender.getGameProfile().getName());
         Text message = formatMessage(channel, displayName, rawText);
 
         for (ServerPlayerEntity recipient : sender.getServer().getPlayerManager().getPlayerList()) {
@@ -371,11 +371,11 @@ public final class ProxyChatManager {
                 areaName);
     }
 
-    private static Text formatMessage(ChatChannel channel, String displayName, String rawText) {
+    private static Text formatMessage(ChatChannel channel, Text displayName, String rawText) {
         if (channel == ChatChannel.WORLD) {
-            return Text.literal("[World] <" + displayName + "> " + rawText);
+            return Text.literal("[World] <").append(displayName).append(Text.literal("> " + rawText));
         }
-        return Text.literal("<" + displayName + "> " + rawText);
+        return Text.literal("<").append(displayName).append(Text.literal("> " + rawText));
     }
 
     private enum ChatChannel {

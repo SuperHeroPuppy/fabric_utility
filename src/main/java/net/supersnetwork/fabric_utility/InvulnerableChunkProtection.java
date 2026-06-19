@@ -131,8 +131,7 @@ public final class InvulnerableChunkProtection {
             return false;
         }
 
-        int heightLimit = realWorld.getGameRules().getInt(FabricUtilityGameRules.WORLD_HEIGHT_LIMIT);
-        return heightLimit > 0 && pos.getY() >= heightLimit;
+        return pos.getY() >= realWorld.getTopY();
     }
 
     private static void warnHeight(PlayerEntity player) {
