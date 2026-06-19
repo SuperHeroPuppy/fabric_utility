@@ -13,10 +13,12 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - Entity command tag `invulnerability` prevents damage, death, fire, fall damage, and knockback.
 - Shift-right-click with an empty hand pets living entities, plays a sound, and spawns heart particles.
 - Gamerule `fabricUtilityAllowPetting` enables or disables petting.
-- Gamerule `fabricUtilityWorldHeightLimit` controls generated Overworld height data. `-1` inherits the active dimension type; non-negative values request max Y `320 + value`.
 - Gamerule `fabricUtilityAdminLogCommands` controls whether operators receive admin command feedback for nickname and chunk tag changes.
 - `/nick set` directly changes a player's nickname while retaining nickname history, with a configurable character limit.
-- `/nick color <hex|clear>` applies an optional RGB nickname color.
+- Nicknames preserve their MiniMessage formatting.
+- Nickname history autocomplete shows plain visible names and resolves the selected name back to its formatted history entry.
+- Chat messages support MiniMessage colors, gradients, decorations, hover text, click events, and nested styles.
+- `/inscriber` applies MiniMessage item names and description lines to the held item.
 - `/nick admin` lets operators set, clear, discover, inspect history, and list player nicknames.
 - Nicknames are applied to chat, proxy chat, common game messages, join/leave messages, tab list names, and nameplates.
 - Jade uses the nickname as the player tooltip title and shows the account username below it.
@@ -52,8 +54,6 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - `/nick set <nickname>`
 - `/nick list`
 - `/nick clear`
-- `/nick color <hex>`
-- `/nick color clear`
 - `/nick admin set <player> <nickname>`
 - `/nick admin clear <player>`
 - `/nick admin discover <player>`
@@ -67,6 +67,13 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - `/proxy area delete <name>`
 - `/proxy area list`
 - `/pin none|world|local|area <name>`
+- `/inscriber name <minimessage>`
+- `/inscriber name clear`
+- `/inscriber description add <minimessage>`
+- `/inscriber description set <line> <minimessage>`
+- `/inscriber description remove <line>`
+- `/inscriber description clear`
+- `/inscriber clear`
 
 ## Ban Hammer NBT
 
@@ -101,9 +108,31 @@ Proxy chat provides advanced messaging options beyond vanilla Minecraft chat:
 
 Chat areas are stored as chunk tags with the prefix `proxy_area:` and can be managed alongside other chunk tags. The system integrates with the nickname system, so nicknames are displayed in proxy chat messages when enabled.
 
-## Height Limit
+## MiniMessage
 
-`fabricUtilityWorldHeightLimit` defaults to `-1`, which inherits the active dimension type. A non-negative value generates a world datapack for an Overworld max Y of `320 + value`. Minecraft dimension heights use 16-block sections, so additions are rounded up to the next multiple of 16. Height changes require a server restart because loaded chunk storage cannot be resized safely.
+Nickname commands preserve MiniMessage styling:
+
+```text
+/nick set "<gradient:#ff55ff:#55ffff>Super Puppy</gradient>"
+```
+
+This displays `Super Puppy` with the gradient. The nickname character limit
+applies to visible text rather than the markup. History autocomplete displays
+`Super Puppy` without tags; selecting it restores the formatted history entry.
+
+Chat and Inscriber content preserve MiniMessage styling:
+
+```text
+Hello <gradient:#ff55ff:#55ffff><bold>world!</bold></gradient>
+/inscriber name "<gold><bold>Hero's Hammer</bold></gold>"
+/inscriber description add "<gray>Forged beyond the stars"
+```
+
+## Inscriber
+
+Inscriber edits the item held in the player's main hand. Description line
+numbers start at `1`. `/inscriber clear` removes the custom name and description
+fields previously marked by Inscriber.
 
 ## Public API
 

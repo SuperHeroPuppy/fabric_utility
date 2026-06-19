@@ -19,6 +19,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.supersnetwork.fabric_utility.api.NicknameApi;
+import net.supersnetwork.fabric_utility.mixin.CommandNodeAccessor;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -82,7 +83,8 @@ public final class ProxyChatManager {
 
         dispatcher.register(tellCommand);
 
-        // /me - action message (world chat)
+        // Fully replace vanilla /me so its source name always resolves through NicknameApi.
+        removeRootCommand(dispatcher, "me");
         var meCommand = CommandManager.literal("me")
                 .then(CommandManager.argument("message", StringArgumentType.greedyString())
                         .executes(context -> sendAction(context, StringArgumentType.getString(context, "message"))));
@@ -132,6 +134,14 @@ public final class ProxyChatManager {
         dispatcher.register(proxyCommand);
     }
 
+    @SuppressWarnings("unchecked")
+    private static void removeRootCommand(CommandDispatcher<ServerCommandSource> dispatcher, String name) {
+        CommandNodeAccessor<ServerCommandSource> root = (CommandNodeAccessor<ServerCommandSource>) (Object) dispatcher.getRoot();
+        root.fabricUtility$getChildren().remove(name);
+        root.fabricUtility$getLiterals().remove(name);
+        root.fabricUtility$getArguments().remove(name);
+    }
+
     private static int sendMessage(CommandContext<ServerCommandSource> context, ChatChannel channel, String message) throws CommandSyntaxException {
         ServerPlayerEntity sender = context.getSource().getPlayerOrThrow();
         sendChat(sender, message, true, channel);
@@ -147,15 +157,19 @@ public final class ProxyChatManager {
         }
 
         Text displayName = NicknameApi.getDisplayName(sender);
-        Text whisperMessage = Text.literal("[Whisper] <").append(displayName).append(Text.literal("> " + message));
+        Text messageBody = MiniMessageFormatter.toNative(sender.getServer(), message);
+        Text whisperMessage = Text.literal("[Whisper] <").append(displayName).append(Text.literal("> ")).append(messageBody);
         target.sendMessage(whisperMessage, false);
-        sender.sendMessage(Text.literal("[Whisper to ").append(NicknameApi.getDisplayName(target)).append(Text.literal("] " + message)), false);
+        sender.sendMessage(Text.literal("[Whisper to ").append(NicknameApi.getDisplayName(target)).append(Text.literal("] ")).append(messageBody), false);
         return 1;
     }
 
     private static int sendAction(CommandContext<ServerCommandSource> context, String message) throws CommandSyntaxException {
         ServerPlayerEntity sender = context.getSource().getPlayerOrThrow();
-        Text actionMessage = Text.literal("* ").append(NicknameApi.getDisplayName(sender)).append(Text.literal(" " + message));
+        Text actionMessage = Text.literal("* ")
+                .append(NicknameApi.getDisplayName(sender))
+                .append(Text.literal(" "))
+                .append(MiniMessageFormatter.toNative(sender.getServer(), message));
 
         for (ServerPlayerEntity recipient : sender.getServer().getPlayerManager().getPlayerList()) {
             if (!FabricUtilityConfig.proxyChatEnabled() || shouldReceive(recipient, sender, ChatChannel.WORLD)) {
@@ -284,7 +298,7 @@ public final class ProxyChatManager {
         Text displayName = useNickname && FabricUtilityConfig.nicknameSystemEnabled()
                 ? NicknameApi.getDisplayName(sender)
                 : Text.literal(sender.getGameProfile().getName());
-        Text message = formatMessage(ChatChannel.LOCAL, displayName, rawText);
+        Text message = formatMessage(sender, ChatChannel.LOCAL, displayName, rawText);
 
         for (ServerPlayerEntity recipient : sender.getServer().getPlayerManager().getPlayerList()) {
             if (recipient == sender) {
@@ -304,7 +318,7 @@ public final class ProxyChatManager {
         Text displayName = useNickname && FabricUtilityConfig.nicknameSystemEnabled()
                 ? NicknameApi.getDisplayName(sender)
                 : Text.literal(sender.getGameProfile().getName());
-        Text message = formatMessage(channel, displayName, rawText);
+        Text message = formatMessage(sender, channel, displayName, rawText);
 
         for (ServerPlayerEntity recipient : sender.getServer().getPlayerManager().getPlayerList()) {
             if (shouldReceive(recipient, sender, channel)) {
@@ -371,11 +385,12 @@ public final class ProxyChatManager {
                 areaName);
     }
 
-    private static Text formatMessage(ChatChannel channel, Text displayName, String rawText) {
+    private static Text formatMessage(ServerPlayerEntity sender, ChatChannel channel, Text displayName, String rawText) {
+        Text messageBody = MiniMessageFormatter.toNative(sender.getServer(), rawText);
         if (channel == ChatChannel.WORLD) {
-            return Text.literal("[World] <").append(displayName).append(Text.literal("> " + rawText));
+            return Text.literal("[World] <").append(displayName).append(Text.literal("> ")).append(messageBody);
         }
-        return Text.literal("<").append(displayName).append(Text.literal("> " + rawText));
+        return Text.literal("<").append(displayName).append(Text.literal("> ")).append(messageBody);
     }
 
     private enum ChatChannel {

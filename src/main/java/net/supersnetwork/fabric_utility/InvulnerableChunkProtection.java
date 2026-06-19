@@ -28,11 +28,6 @@ public final class InvulnerableChunkProtection {
 
     public static void register() {
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
-            if (isAboveConfiguredHeight(world, pos)) {
-                warnHeight(player);
-                return false;
-            }
-
             if (bypass(player, world, pos) || !isProtected(world, pos)) {
                 return true;
             }
@@ -42,11 +37,6 @@ public final class InvulnerableChunkProtection {
         });
 
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-            if (isAboveConfiguredHeight(world, pos)) {
-                warnHeight(player);
-                return ActionResult.FAIL;
-            }
-
             if (bypass(player, world, pos) || !isProtected(world, pos)) {
                 return ActionResult.PASS;
             }
@@ -58,11 +48,6 @@ public final class InvulnerableChunkProtection {
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             BlockPos hitPos = hitResult.getBlockPos();
             BlockPos placementPos = hitPos.offset(hitResult.getSide());
-
-            if (isAboveConfiguredHeight(world, placementPos)) {
-                warnHeight(player);
-                return ActionResult.FAIL;
-            }
 
             if (bypass(player, world, hitPos) || (!isProtected(world, hitPos) && !isProtected(world, placementPos))) {
                 return ActionResult.PASS;
@@ -126,17 +111,4 @@ public final class InvulnerableChunkProtection {
         }
     }
 
-    private static boolean isAboveConfiguredHeight(WorldAccess world, BlockPos pos) {
-        if (!(world instanceof World realWorld)) {
-            return false;
-        }
-
-        return pos.getY() >= realWorld.getTopY();
-    }
-
-    private static void warnHeight(PlayerEntity player) {
-        if (player instanceof ServerPlayerEntity serverPlayer) {
-            serverPlayer.sendMessage(Text.literal("This world is height-limited here").formatted(Formatting.RED), true);
-        }
-    }
 }

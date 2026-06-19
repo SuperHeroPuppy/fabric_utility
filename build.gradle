@@ -11,6 +11,7 @@ base {
 }
 
 repositories {
+    mavenCentral()
     // Add repositories to retrieve artifacts from in here.
     // You should only use this when depending on other mods because
     // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
@@ -35,6 +36,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     modCompileOnly "com.terraformersmc:modmenu:7.2.2"
     modCompileOnly "maven.modrinth:jade:${project.jade_version}"
+    modImplementation include("net.kyori:adventure-platform-fabric:5.9.0")
 
     // Uncomment the following line to enable the deprecated Fabric API modules.
     // These are included in the Fabric API production distribution and allow you to update your mod without the need to remove features that may have been removed from the API.

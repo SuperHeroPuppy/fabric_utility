@@ -5,6 +5,7 @@
   "mixins": [
     "ExplosionMixin",
     "LivingEntityMixin",
+    "CommandNodeAccessor",
     "ServerPlayerEntityMixin"
   ],
   "client": [

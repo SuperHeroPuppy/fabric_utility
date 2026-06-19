@@ -17,7 +17,6 @@ public class FabricUtility implements ModInitializer {
     public void onInitialize() {
         FabricUtilityConfig.load();
         FabricUtilityGameRules.register();
-        WorldHeightManager.register();
         FabricUtilityCommand.register();
         FabricUtilityConfigNetworking.register();
         ChunkTagCommand.register();
@@ -26,6 +25,7 @@ public class FabricUtility implements ModInitializer {
         PettingHandler.register();
         ProxyChatManager.register();
         NickCommandManager.register();
+        InscriberCommand.register();
         BanHammerHandler.register();
 
         LOGGER.info("Fabric Utility initialized");

@@ -11,7 +11,6 @@ Text displayName = NicknameApi.getDisplayName(player);
 String plainName = NicknameApi.getEffectiveName(player);
 
 NicknameApi.setNickname(player, "The Puppy");
-NicknameApi.setColor(player, 0x55AAFF);
 NicknameApi.clearNickname(player);
 ```
 *
@@ -24,7 +23,10 @@ NicknameApi.registerChangeListener((player, previous, current) -> {
 ```
 
 Nickname writes made through the API immediately refresh the player's
-nameplate and tab-list display.
+nameplate and tab-list display. Commands and API writes preserve MiniMessage
+source. History autocomplete presents plain text and resolves it back to the
+formatted saved value. `getPlainNickname` returns visible text and
+`getDisplayName` returns native Minecraft text.
 
 ## Chunk and subchunk tags
 

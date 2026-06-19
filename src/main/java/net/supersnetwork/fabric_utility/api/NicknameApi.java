@@ -1,11 +1,10 @@
 package net.supersnetwork.fabric_utility.api;
 
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.supersnetwork.fabric_utility.FabricUtilityConfig;
 import net.supersnetwork.fabric_utility.NickCommandManager;
+import net.supersnetwork.fabric_utility.MiniMessageFormatter;
 import net.supersnetwork.fabric_utility.NicknameSavedData;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,15 +33,15 @@ public final class NicknameApi {
         return NicknameSavedData.get(server).getNickname(uuid);
     }
 
-    public static Optional<Integer> getColor(ServerPlayerEntity player) {
-        return NicknameSavedData.get(player.getServer()).getColor(player);
+    public static Optional<String> getPlainNickname(ServerPlayerEntity player) {
+        return getNickname(player).map(MiniMessageFormatter::plainText);
     }
 
     public static String getEffectiveName(ServerPlayerEntity player) {
         if (!FabricUtilityConfig.nicknameSystemEnabled()) {
             return player.getGameProfile().getName();
         }
-        return getNickname(player).orElse(player.getGameProfile().getName());
+        return getPlainNickname(player).orElse(player.getGameProfile().getName());
     }
 
     public static Text getDisplayName(ServerPlayerEntity player) {
@@ -55,9 +54,7 @@ public final class NicknameApi {
             return Text.literal(player.getGameProfile().getName());
         }
 
-        MutableText result = Text.literal(nickname.get());
-        getColor(player).ifPresent(color -> result.setStyle(Style.EMPTY.withColor(color)));
-        return result;
+        return MiniMessageFormatter.toNative(player.getServer(), nickname.get());
     }
 
     public static List<String> getHistory(ServerPlayerEntity player) {
@@ -97,9 +94,8 @@ public final class NicknameApi {
         }
     }
 
-    public static void setColor(ServerPlayerEntity player, @Nullable Integer rgb) {
-        NicknameSavedData.get(player.getServer()).setColor(player, rgb);
-        NickCommandManager.refreshPlayer(player);
+    public static String plainText(String nickname) {
+        return MiniMessageFormatter.plainText(nickname);
     }
 
     public static void registerChangeListener(NicknameChangeListener listener) {
