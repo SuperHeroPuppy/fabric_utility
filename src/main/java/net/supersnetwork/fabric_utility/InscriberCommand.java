@@ -5,20 +5,22 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.LoreComponent;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class InscriberCommand {
     private static final String MARKER_KEY = "FabricUtilityInscriber";
-    private static final String DISPLAY_KEY = "display";
-    private static final String LORE_KEY = "Lore";
     private static final SimpleCommandExceptionType ITEM_REQUIRED =
             new SimpleCommandExceptionType(Text.literal("Hold an item in your main hand."));
 
@@ -65,28 +67,33 @@ public final class InscriberCommand {
 
     private static int setName(ServerCommandSource source, String miniMessage) throws CommandSyntaxException {
         ItemStack stack = heldItem(source);
-        stack.setCustomName(MiniMessageFormatter.toNative(source.getServer(), miniMessage));
-        marker(stack).putBoolean("name", true);
+        stack.set(DataComponentTypes.CUSTOM_NAME, MiniMessageFormatter.toNative(source.getServer(), miniMessage));
+        NbtCompound customData = customData(stack);
+        marker(customData).putBoolean("name", true);
+        saveCustomData(stack, customData);
         source.sendFeedback(() -> Text.literal("Inscribed the held item's name."), false);
         return 1;
     }
 
     private static int clearName(ServerCommandSource source) throws CommandSyntaxException {
         ItemStack stack = heldItem(source);
-        stack.removeCustomName();
-        marker(stack).remove("name");
-        cleanMarker(stack);
+        stack.remove(DataComponentTypes.CUSTOM_NAME);
+        NbtCompound customData = customData(stack);
+        marker(customData).remove("name");
+        cleanMarker(customData);
+        saveCustomData(stack, customData);
         source.sendFeedback(() -> Text.literal("Cleared the held item's inscribed name."), false);
         return 1;
     }
 
     private static int addDescriptionLine(ServerCommandSource source, String miniMessage) throws CommandSyntaxException {
         ItemStack stack = heldItem(source);
-        NbtCompound display = stack.getOrCreateSubNbt(DISPLAY_KEY);
-        NbtList lore = display.getList(LORE_KEY, NbtElement.STRING_TYPE);
-        lore.add(NbtString.of(Text.Serializer.toJson(MiniMessageFormatter.toNative(source.getServer(), miniMessage))));
-        display.put(LORE_KEY, lore);
-        marker(stack).putBoolean("description", true);
+        List<Text> lore = lore(stack);
+        lore.add(MiniMessageFormatter.toNative(source.getServer(), miniMessage));
+        setLore(stack, lore);
+        NbtCompound customData = customData(stack);
+        marker(customData).putBoolean("description", true);
+        saveCustomData(stack, customData);
         int lineNumber = lore.size();
         source.sendFeedback(() -> Text.literal("Added description line " + lineNumber + "."), false);
         return 1;
@@ -94,13 +101,12 @@ public final class InscriberCommand {
 
     private static int removeDescriptionLine(ServerCommandSource source, int lineNumber) throws CommandSyntaxException {
         ItemStack stack = heldItem(source);
-        NbtCompound display = stack.getSubNbt(DISPLAY_KEY);
-        if (display == null || !display.contains(LORE_KEY, NbtElement.LIST_TYPE)) {
+        List<Text> lore = lore(stack);
+        if (lore.isEmpty()) {
             source.sendError(Text.literal("The held item has no description lines."));
             return 0;
         }
 
-        NbtList lore = display.getList(LORE_KEY, NbtElement.STRING_TYPE);
         int index = lineNumber - 1;
         if (index < 0 || index >= lore.size()) {
             source.sendError(Text.literal("Description line " + lineNumber + " does not exist."));
@@ -108,13 +114,12 @@ public final class InscriberCommand {
         }
 
         lore.remove(index);
+        setLore(stack, lore);
         if (lore.isEmpty()) {
-            display.remove(LORE_KEY);
-            marker(stack).remove("description");
-            cleanDisplay(stack, display);
-            cleanMarker(stack);
-        } else {
-            display.put(LORE_KEY, lore);
+            NbtCompound customData = customData(stack);
+            marker(customData).remove("description");
+            cleanMarker(customData);
+            saveCustomData(stack, customData);
         }
 
         source.sendFeedback(() -> Text.literal("Removed description line " + lineNumber + "."), false);
@@ -123,59 +128,56 @@ public final class InscriberCommand {
 
     private static int setDescriptionLine(ServerCommandSource source, int lineNumber, String miniMessage) throws CommandSyntaxException {
         ItemStack stack = heldItem(source);
-        NbtCompound display = stack.getSubNbt(DISPLAY_KEY);
-        if (display == null || !display.contains(LORE_KEY, NbtElement.LIST_TYPE)) {
+        List<Text> lore = lore(stack);
+        if (lore.isEmpty()) {
             source.sendError(Text.literal("The held item has no description lines."));
             return 0;
         }
 
-        NbtList lore = display.getList(LORE_KEY, NbtElement.STRING_TYPE);
         int index = lineNumber - 1;
         if (index < 0 || index >= lore.size()) {
             source.sendError(Text.literal("Description line " + lineNumber + " does not exist."));
             return 0;
         }
 
-        lore.set(index, NbtString.of(Text.Serializer.toJson(MiniMessageFormatter.toNative(source.getServer(), miniMessage))));
-        display.put(LORE_KEY, lore);
-        marker(stack).putBoolean("description", true);
+        lore.set(index, MiniMessageFormatter.toNative(source.getServer(), miniMessage));
+        setLore(stack, lore);
+        NbtCompound customData = customData(stack);
+        marker(customData).putBoolean("description", true);
+        saveCustomData(stack, customData);
         source.sendFeedback(() -> Text.literal("Updated description line " + lineNumber + "."), false);
         return 1;
     }
 
     private static int clearDescription(ServerCommandSource source) throws CommandSyntaxException {
         ItemStack stack = heldItem(source);
-        NbtCompound display = stack.getSubNbt(DISPLAY_KEY);
-        if (display != null) {
-            display.remove(LORE_KEY);
-            cleanDisplay(stack, display);
-        }
-        marker(stack).remove("description");
-        cleanMarker(stack);
+        stack.remove(DataComponentTypes.LORE);
+        NbtCompound customData = customData(stack);
+        marker(customData).remove("description");
+        cleanMarker(customData);
+        saveCustomData(stack, customData);
         source.sendFeedback(() -> Text.literal("Cleared the held item's description."), false);
         return 1;
     }
 
     private static int clearInscription(ServerCommandSource source) throws CommandSyntaxException {
         ItemStack stack = heldItem(source);
-        NbtCompound existingMarker = stack.getSubNbt(MARKER_KEY);
-        if (existingMarker == null) {
+        NbtCompound customData = customData(stack);
+        if (!customData.contains(MARKER_KEY, NbtElement.COMPOUND_TYPE)) {
             source.sendError(Text.literal("The held item has not been inscribed."));
             return 0;
         }
 
+        NbtCompound existingMarker = customData.getCompound(MARKER_KEY);
         if (existingMarker.getBoolean("name")) {
-            stack.removeCustomName();
+            stack.remove(DataComponentTypes.CUSTOM_NAME);
         }
         if (existingMarker.getBoolean("description")) {
-            NbtCompound display = stack.getSubNbt(DISPLAY_KEY);
-            if (display != null) {
-                display.remove(LORE_KEY);
-                cleanDisplay(stack, display);
-            }
+            stack.remove(DataComponentTypes.LORE);
         }
 
-        stack.removeSubNbt(MARKER_KEY);
+        customData.remove(MARKER_KEY);
+        saveCustomData(stack, customData);
         source.sendFeedback(() -> Text.literal("Cleared all inscriptions from the held item."), false);
         return 1;
     }
@@ -189,20 +191,43 @@ public final class InscriberCommand {
         return stack;
     }
 
-    private static NbtCompound marker(ItemStack stack) {
-        return stack.getOrCreateSubNbt(MARKER_KEY);
+    private static List<Text> lore(ItemStack stack) {
+        LoreComponent lore = stack.get(DataComponentTypes.LORE);
+        return lore == null ? new ArrayList<>() : new ArrayList<>(lore.lines());
     }
 
-    private static void cleanDisplay(ItemStack stack, NbtCompound display) {
-        if (display.isEmpty()) {
-            stack.removeSubNbt(DISPLAY_KEY);
+    private static void setLore(ItemStack stack, List<Text> lore) {
+        if (lore.isEmpty()) {
+            stack.remove(DataComponentTypes.LORE);
+        } else {
+            stack.set(DataComponentTypes.LORE, new LoreComponent(List.copyOf(lore)));
         }
     }
 
-    private static void cleanMarker(ItemStack stack) {
-        NbtCompound marker = stack.getSubNbt(MARKER_KEY);
-        if (marker != null && marker.isEmpty()) {
-            stack.removeSubNbt(MARKER_KEY);
+    private static NbtCompound customData(ItemStack stack) {
+        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        return customData == null ? new NbtCompound() : customData.copyNbt();
+    }
+
+    private static void saveCustomData(ItemStack stack, NbtCompound customData) {
+        if (customData.isEmpty()) {
+            stack.remove(DataComponentTypes.CUSTOM_DATA);
+        } else {
+            stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(customData));
+        }
+    }
+
+    private static NbtCompound marker(NbtCompound customData) {
+        if (!customData.contains(MARKER_KEY, NbtElement.COMPOUND_TYPE)) {
+            customData.put(MARKER_KEY, new NbtCompound());
+        }
+        return customData.getCompound(MARKER_KEY);
+    }
+
+    private static void cleanMarker(NbtCompound customData) {
+        if (customData.contains(MARKER_KEY, NbtElement.COMPOUND_TYPE)
+                && customData.getCompound(MARKER_KEY).isEmpty()) {
+            customData.remove(MARKER_KEY);
         }
     }
 }

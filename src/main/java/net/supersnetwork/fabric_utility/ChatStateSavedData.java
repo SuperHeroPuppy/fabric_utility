@@ -4,6 +4,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.PersistentState;
@@ -16,13 +17,17 @@ import java.util.UUID;
 
 public class ChatStateSavedData extends PersistentState {
     private static final String STORAGE_KEY = "fabric_utility_chat_state";
+    private static final Type<ChatStateSavedData> TYPE = new Type<>(
+            ChatStateSavedData::new,
+            (nbt, registryLookup) -> fromNbt(nbt),
+            null
+    );
 
     private final Map<UUID, PlayerChatState> states = new HashMap<>();
 
     public static ChatStateSavedData get(MinecraftServer server) {
         return server.getWorld(World.OVERWORLD).getPersistentStateManager().getOrCreate(
-                ChatStateSavedData::fromNbt,
-                ChatStateSavedData::new,
+                TYPE,
                 STORAGE_KEY
         );
     }
@@ -84,7 +89,7 @@ public class ChatStateSavedData extends PersistentState {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         NbtList players = new NbtList();
 
         for (Map.Entry<UUID, PlayerChatState> entry : states.entrySet()) {

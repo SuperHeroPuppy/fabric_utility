@@ -1,14 +1,19 @@
 package net.supersnetwork.fabric_utility;
 
-import net.kyori.adventure.platform.fabric.FabricServerAudiences;
+import com.google.gson.JsonElement;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
 public final class MiniMessageFormatter {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final GsonComponentSerializer GSON = GsonComponentSerializer.gson();
     private static final PlainTextComponentSerializer PLAIN_TEXT = PlainTextComponentSerializer.plainText();
 
     private MiniMessageFormatter() {
@@ -19,7 +24,17 @@ public final class MiniMessageFormatter {
     }
 
     public static Text toNative(MinecraftServer server, String input) {
-        return FabricServerAudiences.of(server).toNative(parse(input));
+        try {
+            JsonElement json = GSON.serializeToTree(parse(input));
+            Gson minecraftTextGson = new GsonBuilder()
+                    .registerTypeHierarchyAdapter(Text.class, new Text.Serializer(server.getRegistryManager()))
+                    .create();
+            MutableText text = minecraftTextGson.fromJson(json, MutableText.class);
+            return text == null ? Text.empty() : text;
+        } catch (RuntimeException exception) {
+            FabricUtility.LOGGER.warn("Could not parse MiniMessage text, falling back to literal text", exception);
+            return Text.literal(input == null ? "" : input);
+        }
     }
 
     public static String plainText(String input) {

@@ -2,8 +2,12 @@ package net.supersnetwork.fabric_utility;
 
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.server.BannedPlayerEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -49,12 +53,15 @@ public final class BanHammerHandler {
     }
 
     private static boolean isBanHammer(ItemStack stack) {
-        return stack.hasNbt() && stack.getNbt().contains(BAN_HAMMER_TAG);
+        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        return customData != null && customData.contains(BAN_HAMMER_TAG);
     }
 
     private static String getReason(ItemStack stack) {
-        if (stack.hasNbt() && stack.getNbt().get(BAN_HAMMER_TAG).getType() == 8) {
-            String reason = stack.getNbt().getString(BAN_HAMMER_TAG);
+        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        NbtCompound nbt = customData == null ? null : customData.getNbt();
+        if (nbt != null && nbt.contains(BAN_HAMMER_TAG, NbtElement.STRING_TYPE)) {
+            String reason = nbt.getString(BAN_HAMMER_TAG);
             return reason.isBlank() ? DEFAULT_REASON : reason;
         }
 

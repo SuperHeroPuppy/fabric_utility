@@ -7,7 +7,6 @@ import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.supersnetwork.fabric_utility.FabricUtilityConfig;
 import net.supersnetwork.fabric_utility.FabricUtilityConfigNetworking;
 
@@ -51,15 +50,15 @@ public class FabricUtilityConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        if (ClientPlayNetworking.canSend(FabricUtilityConfigNetworking.REQUEST_CONFIG)) {
-            ClientPlayNetworking.send(FabricUtilityConfigNetworking.REQUEST_CONFIG, PacketByteBufs.empty());
+        if (ClientPlayNetworking.canSend(FabricUtilityConfigNetworking.REQUEST_CONFIG_ID)) {
+            ClientPlayNetworking.send(new FabricUtilityConfigNetworking.RequestConfigPayload());
         }
         rebuildRows();
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context);
+        renderBackground(context, mouseX, mouseY, delta);
         int top = 32;
         int bottom = height - FOOTER_HEIGHT - 6;
 
@@ -82,9 +81,9 @@ public class FabricUtilityConfigScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         int maxScroll = Math.max(0, contentHeight - (height - FOOTER_HEIGHT - 42));
-        scrollY = Math.max(0, Math.min(maxScroll, scrollY - (int) (amount * 18)));
+        scrollY = Math.max(0, Math.min(maxScroll, scrollY - (int) (verticalAmount * 18)));
         positionRows();
         return true;
     }
@@ -277,10 +276,8 @@ public class FabricUtilityConfigScreen extends Screen {
         values.put("customPetSounds", joinCustomSounds());
 
         if (FabricUtilityClientConfig.isConnectedToModdedServer()
-                && ClientPlayNetworking.canSend(FabricUtilityConfigNetworking.UPDATE_CONFIG)) {
-            var buf = PacketByteBufs.create();
-            FabricUtilityConfigNetworking.writeValues(buf, values);
-            ClientPlayNetworking.send(FabricUtilityConfigNetworking.UPDATE_CONFIG, buf);
+                && ClientPlayNetworking.canSend(FabricUtilityConfigNetworking.UPDATE_CONFIG_ID)) {
+            ClientPlayNetworking.send(new FabricUtilityConfigNetworking.UpdateConfigPayload(values));
         } else {
             FabricUtilityConfig.setValues(values);
         }

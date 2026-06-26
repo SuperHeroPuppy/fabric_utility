@@ -4,6 +4,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -22,14 +23,18 @@ public class TaggedChunksSavedData extends PersistentState {
     private static final String STORAGE_KEY = "tagged_chunks";
     private static final int WHOLE_CHUNK_SECTION = Integer.MIN_VALUE;
     private static final String AREA_TAG_PREFIX = "proxy_area:";
+    private static final Type<TaggedChunksSavedData> TYPE = new Type<>(
+            TaggedChunksSavedData::new,
+            (nbt, registryLookup) -> fromNbt(nbt),
+            null
+    );
 
     private final Map<String, Map<String, List<String>>> taggedAreas = new HashMap<>();
     private transient ServerWorld world;
 
     public static TaggedChunksSavedData get(ServerWorld world) {
         TaggedChunksSavedData data = world.getPersistentStateManager().getOrCreate(
-                TaggedChunksSavedData::fromNbt,
-                TaggedChunksSavedData::new,
+                TYPE,
                 STORAGE_KEY
         );
         data.world = world;
@@ -238,7 +243,7 @@ public class TaggedChunksSavedData extends PersistentState {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         NbtList chunks = new NbtList();
 
         for (Map.Entry<String, Map<String, List<String>>> area : taggedAreas.entrySet()) {

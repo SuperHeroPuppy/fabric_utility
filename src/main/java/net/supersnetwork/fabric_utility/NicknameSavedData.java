@@ -4,6 +4,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.PersistentState;
@@ -18,13 +19,17 @@ import java.util.UUID;
 
 public class NicknameSavedData extends PersistentState {
     private static final String STORAGE_KEY = "fabric_utility_nicknames";
+    private static final Type<NicknameSavedData> TYPE = new Type<>(
+            NicknameSavedData::new,
+            (nbt, registryLookup) -> fromNbt(nbt),
+            null
+    );
 
     private final Map<UUID, PlayerNicknames> nicknames = new HashMap<>();
 
     public static NicknameSavedData get(MinecraftServer server) {
         return server.getWorld(World.OVERWORLD).getPersistentStateManager().getOrCreate(
-                NicknameSavedData::fromNbt,
-                NicknameSavedData::new,
+                TYPE,
                 STORAGE_KEY
         );
     }
@@ -108,7 +113,7 @@ public class NicknameSavedData extends PersistentState {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         NbtList players = new NbtList();
 
         for (Map.Entry<UUID, PlayerNicknames> entry : nicknames.entrySet()) {

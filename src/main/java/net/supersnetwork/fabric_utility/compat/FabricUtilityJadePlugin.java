@@ -5,15 +5,18 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.supersnetwork.fabric_utility.FabricUtility;
 import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.Identifiers;
+import snownee.jade.api.IEntityComponentProvider;
+import snownee.jade.api.ITooltip;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
+import snownee.jade.api.JadeIds;
 import snownee.jade.api.WailaPlugin;
+import snownee.jade.api.config.IPluginConfig;
 
 @WailaPlugin
 public final class FabricUtilityJadePlugin implements IWailaPlugin {
-    static final Identifier PLAYER_NICKNAME = new Identifier(FabricUtility.MOD_ID, "player_nickname");
+    private static final Identifier PLAYER_NICKNAME = Identifier.of(FabricUtility.MOD_ID, "player_nickname");
 
     @Override
     public void register(IWailaCommonRegistration registration) {
@@ -21,9 +24,20 @@ public final class FabricUtilityJadePlugin implements IWailaPlugin {
 
     @Override
     public void registerClient(IWailaClientRegistration registration) {
-        registration.addTooltipCollectedCallback((tooltip, accessor) -> {
-            if (!(accessor instanceof EntityAccessor entityAccessor)
-                    || !(entityAccessor.getEntity() instanceof PlayerEntity player)
+        registration.registerEntityComponent(PlayerNicknameProvider.INSTANCE, PlayerEntity.class);
+    }
+
+    private enum PlayerNicknameProvider implements IEntityComponentProvider {
+        INSTANCE;
+
+        @Override
+        public Identifier getUid() {
+            return PLAYER_NICKNAME;
+        }
+
+        @Override
+        public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
+            if (!(accessor.getEntity() instanceof PlayerEntity player)
                     || !player.hasCustomName()
                     || player.getCustomName() == null) {
                 return;
@@ -35,9 +49,9 @@ public final class FabricUtilityJadePlugin implements IWailaPlugin {
                 return;
             }
 
-            tooltip.remove(Identifiers.CORE_OBJECT_NAME);
-            tooltip.add(0, nickname, Identifiers.CORE_OBJECT_NAME);
+            tooltip.remove(JadeIds.CORE_OBJECT_NAME);
+            tooltip.add(0, nickname, JadeIds.CORE_OBJECT_NAME);
             tooltip.add(1, Text.translatable("tooltip.fabric_utility.username", username), PLAYER_NICKNAME);
-        });
+        }
     }
 }

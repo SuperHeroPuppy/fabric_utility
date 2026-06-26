@@ -4,7 +4,7 @@
   "version": "${version}",
 
   "name": "Fabric Utility",
-  "description": "A basic Fabric utility mod for Minecraft 1.20.1",
+  "description": "A basic Fabric utility mod for Minecraft 1.21.1",
   "authors": [
     "SuperHeroPuppy"
   ],
@@ -36,12 +36,12 @@
   ],
 
   "depends": {
-    "fabricloader": ">=0.15.11",
-    "minecraft": "~1.20.1",
-    "java": ">=17"
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
   },
   "suggests": {
-    "jade": ">=11.13.1",
-    "modmenu": ">=7.2.2"
+    "jade": ">=15.10.5",
+    "modmenu": ">=11.0.4"
   }
 }

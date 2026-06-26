@@ -27,6 +27,9 @@ public class FabricUtility implements ModInitializer {
         NickCommandManager.register();
         InscriberCommand.register();
         BanHammerHandler.register();
+        StasisHandler.register();
+        VersionCompatibility.register();
+        AttachmentBadgeManager.register();
 
         LOGGER.info("Fabric Utility initialized");
     }

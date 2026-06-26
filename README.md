@@ -1,6 +1,6 @@
-# Fabric Utility
+# Fabric Utility 1.21.1
 
-Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
+Fabric Utility is a Minecraft 1.21.1 Fabric server utility mod.
 
 ## Features
 
@@ -31,6 +31,10 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - `/fabricutility config` can reload, sync, inspect, and edit server config values.
 - Petting sounds, command-tag sound overrides, player fallback sound, volume, pitch, particle count, and nickname enablement are configurable.
 - Items with the NBT tag `BanHammer` let operators ban punched players for seven days.
+- Operators can toggle player stasis by right-clicking with an item containing `stasis_provider:1`.
+- Stasis uses the vanilla `stasis` player command tag and blocks movement, looking, interaction, inventory, chat, and command input on both server and client.
+- Clients are warned when their Fabric Utility version is older than the connected server.
+- Supporters from `https://www.supersnetwork.com/api/supporter` can select an independent attachment badge appended to their displayed name with `/cosmetic`.
 
 ## Commands
 
@@ -74,12 +78,57 @@ Fabric Utility is a Minecraft 1.20.1 Fabric server utility mod.
 - `/inscriber description remove <line>`
 - `/inscriber description clear`
 - `/inscriber clear`
+- `/cosmetic`
+- `/cosmetic list`
+- `/cosmetic select <badge>`
+- `/cosmetic clear`
+- `/cosmetic refresh`
 
 ## Ban Hammer NBT
 
 Any item with `BanHammer` in its NBT becomes a ban hammer for operators. If the tag is a string, that string is used as the ban reason. Otherwise the default reason is `the ban hammer has spoken`.
 
 Non-operators cannot activate ban hammer items.
+
+## Stasis Provider NBT
+
+Give an operator a stasis provider with:
+
+```text
+/give @s minecraft:clock{stasis_provider:1}
+```
+
+Right-clicking a player toggles their vanilla `stasis` command tag. The server
+is authoritative and anchors the affected player's position and rotation while
+rejecting gameplay input packets. Updated clients also block keyboard and mouse
+input locally. Stasis can always be removed administratively:
+
+```text
+/tag <player> remove stasis
+```
+
+Only permission-level-2 operators can activate a stasis provider.
+
+## Attachment Badges
+
+Supporter eligibility and allowed badge IDs are loaded from:
+
+```text
+https://www.supersnetwork.com/api/supporter
+https://www.supersnetwork.com/api/supporter/badges
+```
+
+Attachment badges are independent from nickname storage and the nickname API.
+They are appended only after the normal username or nickname has been resolved.
+The selection is stored per player UUID. Eligible supporters receive `default`
+as their initial badge and can select another allowed badge with
+`/cosmetic select <badge>` or hide it with `/cosmetic clear`.
+
+Badge eligibility and descriptions come from the website, but badge icons are
+bundled with each mod release. This version includes `action_deck`, `colon3`,
+`default`, and `super`. If an account has a newer badge that this mod version does not
+include, the fallback info icon is shown with a hover message telling the player
+to update Fabric Utility to see the badge asset.
 
 ## Config Keys
 

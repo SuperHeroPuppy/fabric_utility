@@ -112,7 +112,7 @@ public final class PettingHandler {
 
         Identifier entityId = EntityType.getId(living.getType());
         for (String suffix : FabricUtilityConfig.pettingSoundSuffixes()) {
-            Identifier soundId = new Identifier(entityId.getNamespace(), "entity." + entityId.getPath() + "." + suffix);
+            Identifier soundId = Identifier.of(entityId.getNamespace(), "entity." + entityId.getPath() + "." + suffix);
 
             if (Registries.SOUND_EVENT.containsId(soundId)) {
                 return Registries.SOUND_EVENT.get(soundId);

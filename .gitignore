@@ -30,6 +30,8 @@ logs/
 run/
 
 .port-forge
+bin/
+build/bin/
 
 # Fabric
 # Skip the jar and remapped jar

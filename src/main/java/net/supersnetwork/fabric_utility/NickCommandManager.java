@@ -12,8 +12,8 @@ import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
+import net.minecraft.text.PlainTextContent;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableTextContent;
 import net.supersnetwork.fabric_utility.api.NicknameApi;
@@ -184,8 +184,8 @@ public final class NickCommandManager {
             try {
                 SENDING_REPLACEMENT_MESSAGE.set(true);
                 Text displayName = FabricUtilityConfig.nicknameSystemEnabled()
-                        ? NicknameApi.getDisplayName(sender)
-                        : Text.literal(sender.getGameProfile().getName());
+                        ? AttachmentBadgeApi.attach(sender, NicknameApi.getDisplayName(sender))
+                        : AttachmentBadgeApi.attach(sender, Text.literal(sender.getGameProfile().getName()));
                 sender.getServer().getPlayerManager().broadcast(
                         Text.literal("<")
                                 .append(displayName)
@@ -305,7 +305,7 @@ public final class NickCommandManager {
 
         MutableText replaced;
 
-        if (text.getContent() instanceof LiteralTextContent literal) {
+        if (text.getContent() instanceof PlainTextContent literal) {
             replaced = Text.literal(replaceKnownPlayerNames(literal.string()));
         } else if (text.getContent() instanceof TranslatableTextContent translatable) {
             Object[] args = translatable.getArgs();

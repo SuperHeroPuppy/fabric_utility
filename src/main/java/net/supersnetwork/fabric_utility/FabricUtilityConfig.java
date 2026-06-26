@@ -48,7 +48,7 @@ public final class FabricUtilityConfig {
     private static final Map<String, PetSound> CUSTOM_PET_SOUNDS = new LinkedHashMap<>();
     private static List<String> pettingSoundSuffixes = List.of("ambient", "step", "hurt", "death");
     private static int maxPlayerPetParticles = 5;
-    private static PetSound defaultPlayerPetSound = new PetSound(new Identifier("minecraft", "item.brush.brushing.generic"), 0.1F, 1.8F);
+    private static PetSound defaultPlayerPetSound = new PetSound(Identifier.of("minecraft", "item.brush.brushing.generic"), 0.1F, 1.8F);
     private static boolean nicknameSystemEnabled = true;
     private static int nicknameCharacterLimit = 35;
     private static boolean proxyChatEnabled = true;
@@ -244,7 +244,7 @@ public final class FabricUtilityConfig {
                 .toList();
         maxPlayerPetParticles = parseInt(getValue("maxPlayerPetParticles"), 5);
         defaultPlayerPetSound = new PetSound(
-                parseIdentifier(getValue("defaultPlayerPetSound"), new Identifier("minecraft", "item.brush.brushing.generic")),
+                parseIdentifier(getValue("defaultPlayerPetSound"), Identifier.of("minecraft", "item.brush.brushing.generic")),
                 parseFloat(getValue("defaultPlayerPetVolume"), 0.1F),
                 parseFloat(getValue("defaultPlayerPetPitch"), 1.8F)
         );
