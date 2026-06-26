@@ -6,11 +6,14 @@
     "ExplosionMixin",
     "LivingEntityMixin",
     "CommandNodeAccessor",
-    "ServerPlayerEntityMixin"
+    "ServerPlayerEntityMixin",
+    "ServerPlayNetworkHandlerMixin"
   ],
   "client": [
     "AbstractClientPlayerEntityAccessor",
-    "ClientPlayerEntityMixin"
+    "ClientPlayerEntityMixin",
+    "KeyboardMixin",
+    "MouseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

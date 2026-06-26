@@ -1,0 +1,13 @@
+﻿{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "fabric_utility:font/action_deck.png",
+      "ascent": 8,
+      "height": 9,
+      "chars": [
+        "\uE000"
+      ]
+    }
+  ]
+}

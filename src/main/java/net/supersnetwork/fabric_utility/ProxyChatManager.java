@@ -156,18 +156,18 @@ public final class ProxyChatManager {
             return 0;
         }
 
-        Text displayName = NicknameApi.getDisplayName(sender);
+        Text displayName = AttachmentBadgeApi.attach(sender, NicknameApi.getDisplayName(sender));
         Text messageBody = MiniMessageFormatter.toNative(sender.getServer(), message);
         Text whisperMessage = Text.literal("[Whisper] <").append(displayName).append(Text.literal("> ")).append(messageBody);
         target.sendMessage(whisperMessage, false);
-        sender.sendMessage(Text.literal("[Whisper to ").append(NicknameApi.getDisplayName(target)).append(Text.literal("] ")).append(messageBody), false);
+        sender.sendMessage(Text.literal("[Whisper to ").append(AttachmentBadgeApi.attach(target, NicknameApi.getDisplayName(target))).append(Text.literal("] ")).append(messageBody), false);
         return 1;
     }
 
     private static int sendAction(CommandContext<ServerCommandSource> context, String message) throws CommandSyntaxException {
         ServerPlayerEntity sender = context.getSource().getPlayerOrThrow();
         Text actionMessage = Text.literal("* ")
-                .append(NicknameApi.getDisplayName(sender))
+                .append(AttachmentBadgeApi.attach(sender, NicknameApi.getDisplayName(sender)))
                 .append(Text.literal(" "))
                 .append(MiniMessageFormatter.toNative(sender.getServer(), message));
 
@@ -296,8 +296,8 @@ public final class ProxyChatManager {
         }
 
         Text displayName = useNickname && FabricUtilityConfig.nicknameSystemEnabled()
-                ? NicknameApi.getDisplayName(sender)
-                : Text.literal(sender.getGameProfile().getName());
+                ? AttachmentBadgeApi.attach(sender, NicknameApi.getDisplayName(sender))
+                : AttachmentBadgeApi.attach(sender, Text.literal(sender.getGameProfile().getName()));
         Text message = formatMessage(sender, ChatChannel.LOCAL, displayName, rawText);
 
         for (ServerPlayerEntity recipient : sender.getServer().getPlayerManager().getPlayerList()) {
@@ -316,8 +316,8 @@ public final class ProxyChatManager {
 
     private static void sendChat(ServerPlayerEntity sender, String rawText, boolean useNickname, ChatChannel channel) {
         Text displayName = useNickname && FabricUtilityConfig.nicknameSystemEnabled()
-                ? NicknameApi.getDisplayName(sender)
-                : Text.literal(sender.getGameProfile().getName());
+                ? AttachmentBadgeApi.attach(sender, NicknameApi.getDisplayName(sender))
+                : AttachmentBadgeApi.attach(sender, Text.literal(sender.getGameProfile().getName()));
         Text message = formatMessage(sender, channel, displayName, rawText);
 
         for (ServerPlayerEntity recipient : sender.getServer().getPlayerManager().getPlayerList()) {

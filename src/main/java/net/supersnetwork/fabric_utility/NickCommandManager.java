@@ -184,8 +184,8 @@ public final class NickCommandManager {
             try {
                 SENDING_REPLACEMENT_MESSAGE.set(true);
                 Text displayName = FabricUtilityConfig.nicknameSystemEnabled()
-                        ? NicknameApi.getDisplayName(sender)
-                        : Text.literal(sender.getGameProfile().getName());
+                        ? AttachmentBadgeApi.attach(sender, NicknameApi.getDisplayName(sender))
+                        : AttachmentBadgeApi.attach(sender, Text.literal(sender.getGameProfile().getName()));
                 sender.getServer().getPlayerManager().broadcast(
                         Text.literal("<")
                                 .append(displayName)
